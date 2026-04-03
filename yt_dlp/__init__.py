@@ -965,6 +965,11 @@ def _real_main(argv=None):
 
     parser, opts, all_urls, ydl_opts = parse_options(argv)
 
+    # Check if GUI mode is requested
+    if opts.launch_gui:
+        from .gui import main as gui_main
+        return gui_main()
+
     if print_extractor_information(opts, all_urls):
         return
 
@@ -1104,10 +1109,28 @@ supported_js_runtimes.value['quickjs'] = _QuickJsRuntime
 supported_remote_components.value.append('ejs:github')
 supported_remote_components.value.append('ejs:npm')
 
+def main_gui():
+    """Launch the GUI interface for yt-dlp"""
+    try:
+        from .gui import main as gui_main
+        gui_main()
+    except ImportError as e:
+        print(f'ERROR: Failed to import GUI module: {e}')
+        print('The GUI requires tkinter. Please make sure tkinter is installed.')
+        print('On Debian/Ubuntu: sudo apt-get install python3-tk')
+        print('On Fedora: sudo dnf install python3-tkinter')
+        print('On macOS: tkinter is included with Python')
+        _exit(1)
+    except Exception as e:
+        print(f'ERROR: Failed to launch GUI: {e}')
+        _exit(1)
+
+
 __all__ = [
     'YoutubeDL',
     'gen_extractors',
     'list_extractors',
     'main',
+    'main_gui',
     'parse_options',
 ]

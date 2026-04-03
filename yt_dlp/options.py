@@ -361,6 +361,10 @@ def create_parser():
         action='version',
         help='Print program version and exit')
     general.add_option(
+        '--gui',
+        action='store_true', dest='launch_gui', default=False,
+        help='Launch the graphical user interface (GUI) for yt-dlp')
+    general.add_option(
         '-U', '--update',
         action='store_const', dest='update_self', const=CHANNEL,
         help=format_field(
