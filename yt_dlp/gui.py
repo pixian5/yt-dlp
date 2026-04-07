@@ -809,6 +809,26 @@ class YtDlpGUI:
         self._notebook_tab_texts[frame] = title
         return frame
 
+    def create_scrollable_container(self, frame):
+        """Create a scrollable container that stretches to fill the tab width."""
+        canvas = tk.Canvas(frame, highlightthickness=0, bd=0)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            '<Configure>',
+            lambda _event: canvas.configure(scrollregion=canvas.bbox('all')))
+
+        window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        canvas.bind(
+            '<Configure>',
+            lambda event: canvas.itemconfigure(window_id, width=event.width))
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        return scrollable_frame
+
     def ensure_tab_built(self, frame):
         """Build a tab's contents only once."""
         if frame in self._built_tabs:
@@ -969,22 +989,7 @@ class YtDlpGUI:
     def create_general_tab(self, frame=None):
         """Create General Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        # Scrollable frame
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind(
-            '<Configure>',
-            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
-        )
-
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         # General options
         row = 0
@@ -1066,17 +1071,7 @@ class YtDlpGUI:
     def create_network_tab(self, frame=None):
         """Create Network Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1186,17 +1181,7 @@ class YtDlpGUI:
     def create_video_selection_tab(self, frame=None):
         """Create Video Selection tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1284,17 +1269,7 @@ class YtDlpGUI:
     def create_download_tab(self, frame=None):
         """Create Download Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1359,17 +1334,7 @@ class YtDlpGUI:
     def create_filesystem_tab(self, frame=None):
         """Create Filesystem Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1486,17 +1451,7 @@ class YtDlpGUI:
     def create_video_format_tab(self, frame=None):
         """Create Video Format Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1545,17 +1500,7 @@ class YtDlpGUI:
     def create_subtitle_tab(self, frame=None):
         """Create Subtitle Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1610,17 +1555,7 @@ class YtDlpGUI:
     def create_authentication_tab(self, frame=None):
         """Create Authentication Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1688,17 +1623,7 @@ class YtDlpGUI:
     def create_postprocessing_tab(self, frame=None):
         """Create Post-processing Options tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1818,17 +1743,7 @@ class YtDlpGUI:
     def create_verbosity_tab(self, frame=None):
         """Create Verbosity and Simulation tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
@@ -1935,17 +1850,7 @@ class YtDlpGUI:
     def create_workarounds_tab(self, frame=None):
         """Create Workarounds tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
-
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
-
-        scrollable_frame.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_frame = self.create_scrollable_container(frame)
 
         row = 0
 
