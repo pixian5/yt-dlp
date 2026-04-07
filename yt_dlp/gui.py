@@ -7,6 +7,7 @@ of all yt-dlp options without needing to remember command-line arguments.
 """
 
 import json
+import locale
 import os
 import sys
 import tkinter as tk
@@ -15,21 +16,531 @@ import threading
 import subprocess
 
 
+LANGUAGE_OPTIONS = {
+    'en': 'English',
+    'zh': '中文',
+    'ru': 'Русский',
+    'ja': '日本語',
+    'ko': '한국어',
+    'es': 'Español',
+    'fr': 'Français',
+    'de': 'Deutsch',
+}
+
+
+TRANSLATIONS = {
+    'zh': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp 图形界面 - 视频下载配置',
+        'Language:': '语言：',
+        'Video URL(s):': '视频 URL：',
+        'Or Batch File:': '或批量文件：',
+        'Browse...': '浏览...',
+        'Download': '下载',
+        'List Formats': '列出格式',
+        'Extract Info': '提取信息',
+        'Load Config': '加载配置',
+        'Save Config': '保存配置',
+        'Output Console': '输出控制台',
+        'Ready': '就绪',
+        'General': '常规',
+        'Network': '网络',
+        'Geo-restriction': '地区限制',
+        'Video Selection': '视频筛选',
+        'Download': '下载',
+        'Filesystem': '文件系统',
+        'Video Format': '视频格式',
+        'Subtitles': '字幕',
+        'Authentication': '认证',
+        'Post-processing': '后处理',
+        'Thumbnail': '缩略图',
+        'Verbosity/Simulation': '输出/模拟',
+        'Workarounds': '兼容方案',
+        'SponsorBlock': 'SponsorBlock',
+        'Extractor': '提取器',
+        'Advanced': '高级',
+        'Configuration file:': '配置文件：',
+        'Default search prefix:': '默认搜索前缀：',
+        'Flat playlist extraction:': '平铺播放列表提取：',
+        'Age limit (years):': '年龄限制（岁）：',
+        'Download archive file:': '下载归档文件：',
+        'Max downloads:': '最大下载数：',
+        'Proxy URL:': '代理 URL：',
+        'Socket timeout (seconds):': '套接字超时（秒）：',
+        'Source address (bind to):': '源地址（绑定到）：',
+        'Sleep interval (seconds):': '休眠间隔（秒）：',
+        'Max sleep interval (seconds):': '最大休眠间隔（秒）：',
+        'Sleep interval for requests (seconds):': '请求休眠间隔（秒）：',
+        'Sleep interval for subtitles (seconds):': '字幕休眠间隔（秒）：',
+        'Rate limit (e.g., "50K" or "4.2M"):': '限速（例如“50K”或“4.2M”）：',
+        'Throttled rate (minimum rate):': '节流速率（最小速率）：',
+        'Retries:': '重试次数：',
+        'Fragment retries:': '分片重试次数：',
+        'Geo verification proxy:': '地区校验代理：',
+        'Geo bypass country:': '地区绕过国家：',
+        'Geo bypass IP block:': '地区绕过 IP 段：',
+        'Playlist items:': '播放列表项目：',
+        'Playlist start:': '播放列表起始：',
+        'Playlist end:': '播放列表结束：',
+        'Match title (regex):': '匹配标题（正则）：',
+        'Reject title (regex):': '排除标题（正则）：',
+        'Min filesize (e.g., 50k or 1M):': '最小文件大小（例如 50k 或 1M）：',
+        'Max filesize (e.g., 50M or 1G):': '最大文件大小（例如 50M 或 1G）：',
+        'Date (YYYYMMDD):': '日期（YYYYMMDD）：',
+        'Date before (YYYYMMDD):': '此前日期（YYYYMMDD）：',
+        'Date after (YYYYMMDD):': '此后日期（YYYYMMDD）：',
+        'Min views:': '最小观看数：',
+        'Max views:': '最大观看数：',
+        'Match filter:': '匹配筛选器：',
+        'Concurrent fragments:': '并发分片数：',
+        'Limit download rate:': '限制下载速率：',
+        'Buffer size:': '缓冲区大小：',
+        'HTTP chunk size:': 'HTTP 分块大小：',
+        'External downloader:': '外部下载器：',
+        'External downloader args:': '外部下载器参数：',
+        'Output template:': '输出模板：',
+        'Output directory:': '输出目录：',
+        'Paths configuration:': '路径配置：',
+        'Load info JSON:': '加载信息 JSON：',
+        'Cache directory:': '缓存目录：',
+        'Format selection:': '格式选择：',
+        'Format sort:': '格式排序：',
+        'Merge output format:': '合并输出格式：',
+        'Video multistreams:': '视频多流：',
+        'Audio multistreams:': '音频多流：',
+        'Subtitle format:': '字幕格式：',
+        'Subtitle languages:': '字幕语言：',
+        'Username:': '用户名：',
+        'Password:': '密码：',
+        'Two-factor code:': '双重验证码：',
+        'Video password:': '视频密码：',
+        'Adobe Pass MSO:': 'Adobe Pass MSO：',
+        'Adobe Pass username:': 'Adobe Pass 用户名：',
+        'Adobe Pass password:': 'Adobe Pass 密码：',
+        'Client certificate:': '客户端证书：',
+        'Client certificate key:': '客户端证书密钥：',
+        'Client certificate password:': '客户端证书密码：',
+        'Audio format:': '音频格式：',
+        'Audio quality:': '音频质量：',
+        'Recode video format:': '重编码视频格式：',
+        'Remux video format:': '封装转换视频格式：',
+        'Metadata fields:': '元数据字段：',
+        'Parse metadata:': '解析元数据：',
+        'FFmpeg location:': 'FFmpeg 位置：',
+        'Post-processor args:': '后处理器参数：',
+        'Convert thumbnails format:': '转换缩略图格式：',
+        'Progress template:': '进度模板：',
+        'Encoding:': '编码：',
+        'User agent:': 'User-Agent：',
+        'Referer:': 'Referer：',
+        'Add header:': '添加请求头：',
+        'Sleep before requests:': '请求前休眠：',
+        'SponsorBlock categories to remove:': '要移除的 SponsorBlock 分类：',
+        'SponsorBlock categories to mark:': '要标记的 SponsorBlock 分类：',
+        'SponsorBlock chapter title:': 'SponsorBlock 章节标题：',
+        'SponsorBlock API URL:': 'SponsorBlock API URL：',
+        'Extractor arguments:': '提取器参数：',
+        'Extractor retries:': '提取器重试次数：',
+        'Cookies from browser:': '从浏览器读取 Cookies：',
+        'Cookies file:': 'Cookies 文件：',
+        'Raw command-line arguments:': '原始命令行参数：',
+        'Generated command:': '生成的命令：',
+        'Generate Command': '生成命令',
+        'Copy to Clipboard': '复制到剪贴板',
+        'Running: yt-dlp ': '正在运行：yt-dlp ',
+        'Downloading...': '下载中...',
+        'Download completed successfully!': '下载成功完成！',
+        'Process exited with code ': '进程退出，代码：',
+        'ERROR: yt-dlp not found. Please make sure yt-dlp is installed and in your PATH.': '错误：未找到 yt-dlp，请确认它已安装并且在 PATH 中。',
+        'ERROR: ': '错误：',
+        'Command copied to clipboard!': '命令已复制到剪贴板！',
+        'No URL': '没有 URL',
+        'Please enter a URL or batch file to download.': '请输入要下载的 URL 或批量文件。',
+        'Please enter a URL.': '请输入 URL。',
+        'Error': '错误',
+        'Success': '成功',
+        'Failed to save configuration: ': '保存配置失败：',
+        'Failed to load configuration: ': '加载配置失败：',
+        'Configuration loaded successfully!': '配置加载成功！',
+        'Configuration saved successfully!': '配置保存成功！',
+        'Load Configuration': '加载配置',
+        'Save Configuration': '保存配置',
+        'Select Batch File': '选择批量文件',
+        'Select Config File': '选择配置文件',
+        'Select Archive File': '选择归档文件',
+        'Select Output Directory': '选择输出目录',
+        'Select Info JSON': '选择信息 JSON',
+        'Select Cache Directory': '选择缓存目录',
+        'Select Client Certificate': '选择客户端证书',
+        'Select Client Certificate Key': '选择客户端证书密钥',
+        'Select FFmpeg Binary': '选择 FFmpeg 可执行文件',
+        'Select Cookies File': '选择 Cookies 文件',
+        'Text Files': '文本文件',
+        'All Files': '所有文件',
+        'Config Files': '配置文件',
+        'JSON Files': 'JSON 文件',
+        'PEM Files': 'PEM 文件',
+        'Key Files': '密钥文件',
+        'Executable Files': '可执行文件',
+        '(e.g., "ytsearch5:")': '（例如“ytsearch5:”）',
+        '(ISO 3166-2 code)': '（ISO 3166-2 代码）',
+        '(CIDR notation)': '（CIDR 表示法）',
+        '(e.g., "1-5,10,15-20")': '（例如“1-5,10,15-20”）',
+        '(e.g., 50K or 4.2M)': '（例如 50K 或 4.2M）',
+        '(e.g., "%(title)s.%(ext)s")': '（例如“%(title)s.%(ext)s”）',
+        '(e.g., "bestvideo+bestaudio")': '（例如“bestvideo+bestaudio”）',
+        '(comma-separated, e.g., "en,fr,de")': '（逗号分隔，例如“en,fr,de”）',
+        '(comma-separated)': '（逗号分隔）',
+        '(key:val[,val] format)': '（key:val[,val] 格式）',
+        '(One argument per line or space-separated)': '（每行一个参数，或用空格分隔）',
+        '(0-10, 0 = best)': '（0-10，0 为最佳）',
+    },
+    'ru': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Настройка загрузки видео',
+        'Language:': 'Язык:',
+        'Video URL(s):': 'URL видео:',
+        'Or Batch File:': 'Или пакетный файл:',
+        'Browse...': 'Обзор...',
+        'Download': 'Скачать',
+        'List Formats': 'Список форматов',
+        'Extract Info': 'Извлечь информацию',
+        'Load Config': 'Загрузить конфиг',
+        'Save Config': 'Сохранить конфиг',
+        'Output Console': 'Консоль вывода',
+        'Ready': 'Готово',
+        'General': 'Общие',
+        'Network': 'Сеть',
+        'Geo-restriction': 'Гео-ограничения',
+        'Video Selection': 'Выбор видео',
+        'Filesystem': 'Файловая система',
+        'Video Format': 'Формат видео',
+        'Subtitles': 'Субтитры',
+        'Authentication': 'Аутентификация',
+        'Post-processing': 'Постобработка',
+        'Thumbnail': 'Миниатюра',
+        'Verbosity/Simulation': 'Вывод/Симуляция',
+        'Workarounds': 'Обходные пути',
+        'Extractor': 'Экстрактор',
+        'Advanced': 'Дополнительно',
+        'Generated command:': 'Сгенерированная команда:',
+        'Generate Command': 'Сгенерировать команду',
+        'Copy to Clipboard': 'Скопировать',
+        'Running: yt-dlp ': 'Запуск: yt-dlp ',
+        'Downloading...': 'Загрузка...',
+        'Download completed successfully!': 'Загрузка успешно завершена!',
+        'Process exited with code ': 'Процесс завершился с кодом ',
+        'Command copied to clipboard!': 'Команда скопирована в буфер обмена!',
+        'No URL': 'Нет URL',
+        'Please enter a URL or batch file to download.': 'Введите URL или пакетный файл для загрузки.',
+        'Please enter a URL.': 'Введите URL.',
+        'Error': 'Ошибка',
+        'Success': 'Успех',
+        'Failed to save configuration: ': 'Не удалось сохранить конфигурацию: ',
+        'Failed to load configuration: ': 'Не удалось загрузить конфигурацию: ',
+        'Configuration loaded successfully!': 'Конфигурация успешно загружена!',
+        'Configuration saved successfully!': 'Конфигурация успешно сохранена!',
+        'Load Configuration': 'Загрузить конфигурацию',
+        'Save Configuration': 'Сохранить конфигурацию',
+        'Select Batch File': 'Выбрать пакетный файл',
+        'Select Config File': 'Выбрать файл конфигурации',
+        'Select Archive File': 'Выбрать файл архива',
+        'Select Output Directory': 'Выбрать каталог вывода',
+        'Select Info JSON': 'Выбрать Info JSON',
+        'Select Cache Directory': 'Выбрать каталог кэша',
+        'Select Client Certificate': 'Выбрать клиентский сертификат',
+        'Select Client Certificate Key': 'Выбрать ключ клиентского сертификата',
+        'Select FFmpeg Binary': 'Выбрать бинарник FFmpeg',
+        'Select Cookies File': 'Выбрать файл cookies',
+        'Text Files': 'Текстовые файлы',
+        'All Files': 'Все файлы',
+        'Config Files': 'Файлы конфигурации',
+        'JSON Files': 'JSON файлы',
+        'PEM Files': 'PEM файлы',
+        'Key Files': 'Файлы ключей',
+        'Executable Files': 'Исполняемые файлы',
+    },
+    'ja': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - 動画ダウンロード設定',
+        'Language:': '言語:',
+        'Video URL(s):': '動画 URL:',
+        'Or Batch File:': 'または一括ファイル:',
+        'Browse...': '参照...',
+        'Download': 'ダウンロード',
+        'List Formats': '形式一覧',
+        'Extract Info': '情報抽出',
+        'Load Config': '設定読込',
+        'Save Config': '設定保存',
+        'Output Console': '出力コンソール',
+        'Ready': '準備完了',
+        'General': '一般',
+        'Network': 'ネットワーク',
+        'Geo-restriction': '地域制限',
+        'Video Selection': '動画選択',
+        'Filesystem': 'ファイルシステム',
+        'Video Format': '動画形式',
+        'Subtitles': '字幕',
+        'Authentication': '認証',
+        'Post-processing': '後処理',
+        'Thumbnail': 'サムネイル',
+        'Verbosity/Simulation': '出力/シミュレーション',
+        'Workarounds': '回避策',
+        'Extractor': '抽出',
+        'Advanced': '詳細',
+        'Generated command:': '生成コマンド:',
+        'Generate Command': 'コマンド生成',
+        'Copy to Clipboard': 'クリップボードにコピー',
+        'Running: yt-dlp ': '実行中: yt-dlp ',
+        'Downloading...': 'ダウンロード中...',
+        'Download completed successfully!': 'ダウンロードが正常に完了しました！',
+        'Process exited with code ': 'プロセス終了コード: ',
+        'Command copied to clipboard!': 'コマンドをクリップボードにコピーしました！',
+        'No URL': 'URL なし',
+        'Please enter a URL or batch file to download.': 'ダウンロードする URL または一括ファイルを入力してください。',
+        'Please enter a URL.': 'URL を入力してください。',
+        'Error': 'エラー',
+        'Success': '成功',
+        'Failed to save configuration: ': '設定の保存に失敗しました: ',
+        'Failed to load configuration: ': '設定の読み込みに失敗しました: ',
+        'Configuration loaded successfully!': '設定を読み込みました！',
+        'Configuration saved successfully!': '設定を保存しました！',
+        'Text Files': 'テキストファイル',
+        'All Files': 'すべてのファイル',
+        'Config Files': '設定ファイル',
+        'JSON Files': 'JSON ファイル',
+        'PEM Files': 'PEM ファイル',
+        'Key Files': '鍵ファイル',
+        'Executable Files': '実行ファイル',
+    },
+    'ko': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - 비디오 다운로드 설정',
+        'Language:': '언어:',
+        'Video URL(s):': '비디오 URL:',
+        'Or Batch File:': '또는 배치 파일:',
+        'Browse...': '찾아보기...',
+        'Download': '다운로드',
+        'List Formats': '포맷 목록',
+        'Extract Info': '정보 추출',
+        'Load Config': '설정 불러오기',
+        'Save Config': '설정 저장',
+        'Output Console': '출력 콘솔',
+        'Ready': '준비됨',
+        'General': '일반',
+        'Network': '네트워크',
+        'Geo-restriction': '지역 제한',
+        'Video Selection': '비디오 선택',
+        'Filesystem': '파일 시스템',
+        'Video Format': '비디오 형식',
+        'Subtitles': '자막',
+        'Authentication': '인증',
+        'Post-processing': '후처리',
+        'Thumbnail': '썸네일',
+        'Verbosity/Simulation': '출력/시뮬레이션',
+        'Workarounds': '우회 설정',
+        'Extractor': '추출기',
+        'Advanced': '고급',
+        'Generated command:': '생성된 명령:',
+        'Generate Command': '명령 생성',
+        'Copy to Clipboard': '클립보드에 복사',
+        'Running: yt-dlp ': '실행 중: yt-dlp ',
+        'Downloading...': '다운로드 중...',
+        'Download completed successfully!': '다운로드가 성공적으로 완료되었습니다!',
+        'Process exited with code ': '프로세스 종료 코드: ',
+        'Command copied to clipboard!': '명령이 클립보드에 복사되었습니다!',
+        'No URL': 'URL 없음',
+        'Please enter a URL or batch file to download.': '다운로드할 URL 또는 배치 파일을 입력하세요.',
+        'Please enter a URL.': 'URL을 입력하세요.',
+        'Error': '오류',
+        'Success': '성공',
+        'Failed to save configuration: ': '설정 저장 실패: ',
+        'Failed to load configuration: ': '설정 불러오기 실패: ',
+        'Configuration loaded successfully!': '설정을 성공적으로 불러왔습니다!',
+        'Configuration saved successfully!': '설정을 성공적으로 저장했습니다!',
+        'Text Files': '텍스트 파일',
+        'All Files': '모든 파일',
+        'Config Files': '설정 파일',
+        'JSON Files': 'JSON 파일',
+        'PEM Files': 'PEM 파일',
+        'Key Files': '키 파일',
+        'Executable Files': '실행 파일',
+    },
+    'es': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Configuración de descarga de video',
+        'Language:': 'Idioma:',
+        'Video URL(s):': 'URL(s) de video:',
+        'Or Batch File:': 'O archivo por lotes:',
+        'Browse...': 'Examinar...',
+        'Download': 'Descargar',
+        'List Formats': 'Listar formatos',
+        'Extract Info': 'Extraer información',
+        'Load Config': 'Cargar config',
+        'Save Config': 'Guardar config',
+        'Output Console': 'Consola de salida',
+        'Ready': 'Listo',
+        'General': 'General',
+        'Network': 'Red',
+        'Geo-restriction': 'Restricción geográfica',
+        'Video Selection': 'Selección de video',
+        'Filesystem': 'Sistema de archivos',
+        'Video Format': 'Formato de video',
+        'Subtitles': 'Subtítulos',
+        'Authentication': 'Autenticación',
+        'Post-processing': 'Posprocesado',
+        'Thumbnail': 'Miniatura',
+        'Verbosity/Simulation': 'Salida/Simulación',
+        'Workarounds': 'Soluciones',
+        'Extractor': 'Extractor',
+        'Advanced': 'Avanzado',
+        'Generated command:': 'Comando generado:',
+        'Generate Command': 'Generar comando',
+        'Copy to Clipboard': 'Copiar al portapapeles',
+        'Running: yt-dlp ': 'Ejecutando: yt-dlp ',
+        'Downloading...': 'Descargando...',
+        'Download completed successfully!': '¡Descarga completada con éxito!',
+        'Process exited with code ': 'El proceso terminó con código ',
+        'Command copied to clipboard!': '¡Comando copiado al portapapeles!',
+        'No URL': 'Sin URL',
+        'Please enter a URL or batch file to download.': 'Introduce una URL o un archivo por lotes para descargar.',
+        'Please enter a URL.': 'Introduce una URL.',
+        'Error': 'Error',
+        'Success': 'Éxito',
+        'Failed to save configuration: ': 'No se pudo guardar la configuración: ',
+        'Failed to load configuration: ': 'No se pudo cargar la configuración: ',
+        'Configuration loaded successfully!': '¡Configuración cargada correctamente!',
+        'Configuration saved successfully!': '¡Configuración guardada correctamente!',
+        'Text Files': 'Archivos de texto',
+        'All Files': 'Todos los archivos',
+        'Config Files': 'Archivos de configuración',
+        'JSON Files': 'Archivos JSON',
+        'PEM Files': 'Archivos PEM',
+        'Key Files': 'Archivos de clave',
+        'Executable Files': 'Archivos ejecutables',
+    },
+    'fr': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Configuration du telechargement video',
+        'Language:': 'Langue :',
+        'Video URL(s):': 'URL(s) video :',
+        'Or Batch File:': 'Ou fichier batch :',
+        'Browse...': 'Parcourir...',
+        'Download': 'Telecharger',
+        'List Formats': 'Lister les formats',
+        'Extract Info': 'Extraire les infos',
+        'Load Config': 'Charger la config',
+        'Save Config': 'Enregistrer la config',
+        'Output Console': 'Console de sortie',
+        'Ready': 'Pret',
+        'General': 'General',
+        'Network': 'Reseau',
+        'Geo-restriction': 'Restriction geo',
+        'Video Selection': 'Selection video',
+        'Filesystem': 'Systeme de fichiers',
+        'Video Format': 'Format video',
+        'Subtitles': 'Sous-titres',
+        'Authentication': 'Authentification',
+        'Post-processing': 'Post-traitement',
+        'Thumbnail': 'Miniature',
+        'Verbosity/Simulation': 'Sortie/Simulation',
+        'Workarounds': 'Contournements',
+        'Extractor': 'Extracteur',
+        'Advanced': 'Avance',
+        'Generated command:': 'Commande generee :',
+        'Generate Command': 'Generer la commande',
+        'Copy to Clipboard': 'Copier dans le presse-papiers',
+        'Running: yt-dlp ': 'Execution : yt-dlp ',
+        'Downloading...': 'Telechargement...',
+        'Download completed successfully!': 'Telechargement termine avec succes !',
+        'Process exited with code ': 'Le processus s est termine avec le code ',
+        'Command copied to clipboard!': 'Commande copiée dans le presse-papiers !',
+        'No URL': 'Pas d URL',
+        'Please enter a URL or batch file to download.': 'Saisissez une URL ou un fichier batch a telecharger.',
+        'Please enter a URL.': 'Saisissez une URL.',
+        'Error': 'Erreur',
+        'Success': 'Succes',
+        'Failed to save configuration: ': 'Echec de l enregistrement de la configuration : ',
+        'Failed to load configuration: ': 'Echec du chargement de la configuration : ',
+        'Configuration loaded successfully!': 'Configuration chargee avec succes !',
+        'Configuration saved successfully!': 'Configuration enregistree avec succes !',
+        'Text Files': 'Fichiers texte',
+        'All Files': 'Tous les fichiers',
+        'Config Files': 'Fichiers de configuration',
+        'JSON Files': 'Fichiers JSON',
+        'PEM Files': 'Fichiers PEM',
+        'Key Files': 'Fichiers de cle',
+        'Executable Files': 'Fichiers executables',
+    },
+    'de': {
+        'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Video-Download-Konfiguration',
+        'Language:': 'Sprache:',
+        'Video URL(s):': 'Video-URL(s):',
+        'Or Batch File:': 'Oder Batch-Datei:',
+        'Browse...': 'Durchsuchen...',
+        'Download': 'Herunterladen',
+        'List Formats': 'Formate auflisten',
+        'Extract Info': 'Infos extrahieren',
+        'Load Config': 'Konfig laden',
+        'Save Config': 'Konfig speichern',
+        'Output Console': 'Ausgabekonsole',
+        'Ready': 'Bereit',
+        'General': 'Allgemein',
+        'Network': 'Netzwerk',
+        'Geo-restriction': 'Geobeschraenkung',
+        'Video Selection': 'Videoauswahl',
+        'Filesystem': 'Dateisystem',
+        'Video Format': 'Videoformat',
+        'Subtitles': 'Untertitel',
+        'Authentication': 'Authentifizierung',
+        'Post-processing': 'Nachbearbeitung',
+        'Thumbnail': 'Vorschaubild',
+        'Verbosity/Simulation': 'Ausgabe/Simulation',
+        'Workarounds': 'Workarounds',
+        'Extractor': 'Extraktor',
+        'Advanced': 'Erweitert',
+        'Generated command:': 'Generierter Befehl:',
+        'Generate Command': 'Befehl erzeugen',
+        'Copy to Clipboard': 'In Zwischenablage kopieren',
+        'Running: yt-dlp ': 'Wird ausgefuehrt: yt-dlp ',
+        'Downloading...': 'Lade herunter...',
+        'Download completed successfully!': 'Download erfolgreich abgeschlossen!',
+        'Process exited with code ': 'Prozess beendet mit Code ',
+        'Command copied to clipboard!': 'Befehl in die Zwischenablage kopiert!',
+        'No URL': 'Keine URL',
+        'Please enter a URL or batch file to download.': 'Bitte gib eine URL oder Batch-Datei zum Herunterladen ein.',
+        'Please enter a URL.': 'Bitte gib eine URL ein.',
+        'Error': 'Fehler',
+        'Success': 'Erfolg',
+        'Failed to save configuration: ': 'Konfiguration konnte nicht gespeichert werden: ',
+        'Failed to load configuration: ': 'Konfiguration konnte nicht geladen werden: ',
+        'Configuration loaded successfully!': 'Konfiguration erfolgreich geladen!',
+        'Configuration saved successfully!': 'Konfiguration erfolgreich gespeichert!',
+        'Text Files': 'Textdateien',
+        'All Files': 'Alle Dateien',
+        'Config Files': 'Konfigurationsdateien',
+        'JSON Files': 'JSON-Dateien',
+        'PEM Files': 'PEM-Dateien',
+        'Key Files': 'Schluesseldateien',
+        'Executable Files': 'Ausfuehrbare Dateien',
+    },
+}
+
+
 class YtDlpGUI:
     """Main GUI application for yt-dlp configuration and downloading"""
 
     def __init__(self, root):
         self.root = root
-        self.root.title('yt-dlp GUI - Video Downloader Configuration')
         self.root.geometry('1200x800')
+        self.base_title = 'yt-dlp GUI - Video Downloader Configuration'
+        self._translatable_widgets = {}
+        self._notebook_tab_texts = {}
 
         # Configuration storage
         self.config = {}
         self.config_file = os.path.expanduser('~/.yt-dlp-gui-config.json')
         self.load_config()
+        self.current_language = self.initialize_language()
 
         # Create main container
         self.create_widgets()
+        self.apply_localization()
+        self.apply_config()
 
         # Set window icon (if available)
         try:
@@ -37,11 +548,131 @@ class YtDlpGUI:
         except Exception:
             pass
 
+    def tr(self, text):
+        """Translate UI text with English fallback."""
+        if not text:
+            return text
+        translations = TRANSLATIONS.get(self.current_language, {})
+        return translations.get(text, text)
+
+    def translate_concat(self, prefix, value):
+        """Translate a message prefix while preserving dynamic data."""
+        return f'{self.tr(prefix)}{value}'
+
+    def detect_system_language(self):
+        """Detect the preferred system language and map it to a supported locale."""
+        candidates = []
+        try:
+            lang, _ = locale.getlocale()
+            if lang:
+                candidates.append(lang)
+        except Exception:
+            pass
+
+        for env_name in ('LC_ALL', 'LC_MESSAGES', 'LANG'):
+            value = os.environ.get(env_name)
+            if value:
+                candidates.append(value)
+
+        for candidate in candidates:
+            normalized = candidate.replace('-', '_').lower()
+            prefix = normalized.split('_', 1)[0]
+            if prefix in LANGUAGE_OPTIONS:
+                return prefix
+        return 'en'
+
+    def initialize_language(self):
+        """Detect and persist the initial language only on the first launch."""
+        if self.config.get('language_initialized'):
+            language = self.config.get('language', 'en')
+            return language if language in LANGUAGE_OPTIONS else 'en'
+
+        language = self.detect_system_language()
+        self.config['language'] = language
+        self.config['language_initialized'] = True
+        self.write_config_to_disk(self.config)
+        return language
+
+    def write_config_to_disk(self, config):
+        with open(self.config_file, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2)
+
+    def get_language_display(self, code):
+        return LANGUAGE_OPTIONS.get(code, LANGUAGE_OPTIONS['en'])
+
+    def get_language_code_from_display(self, display_name):
+        for code, name in LANGUAGE_OPTIONS.items():
+            if name == display_name:
+                return code
+        return 'en'
+
+    def register_translatable_widget(self, widget, text):
+        self._translatable_widgets[widget] = text
+        return widget
+
+    def apply_localization(self):
+        """Refresh translated text on widgets that expose a text property."""
+        self.root.title(self.tr(self.base_title))
+
+        if hasattr(self, 'language_label'):
+            self.language_label.config(text=self.tr('Language:'))
+        if hasattr(self, 'language_selector'):
+            self.language_selector.set(self.get_language_display(self.current_language))
+        if hasattr(self, 'status_var') and not self.status_var.get():
+            self.status_var.set(self.tr('Ready'))
+
+        self.localize_widget_tree(self.root)
+        self.localize_notebook_tabs()
+
+    def localize_widget_tree(self, widget):
+        try:
+            text = widget.cget('text')
+        except tk.TclError:
+            text = None
+
+        if text is not None:
+            if widget not in self._translatable_widgets:
+                self._translatable_widgets[widget] = text
+            widget.config(text=self.tr(self._translatable_widgets[widget]))
+
+        for child in widget.winfo_children():
+            self.localize_widget_tree(child)
+
+    def localize_notebook_tabs(self):
+        if not hasattr(self, 'notebook'):
+            return
+        for tab_id in self.notebook.tabs():
+            child = self.root.nametowidget(tab_id)
+            if child not in self._notebook_tab_texts:
+                self._notebook_tab_texts[child] = self.notebook.tab(tab_id, 'text')
+            self.notebook.tab(tab_id, text=self.tr(self._notebook_tab_texts[child]))
+
+    def on_language_changed(self, _event=None):
+        new_language = self.get_language_code_from_display(self.language_var.get())
+        if new_language == self.current_language:
+            return
+        self.current_language = new_language
+        self.apply_localization()
+        self.status_var.set(self.tr('Ready'))
+        self.save_config(silent=True)
+
     def create_widgets(self):
         """Create all GUI widgets"""
         # Top frame for URL input and quick actions
         top_frame = ttk.Frame(self.root, padding='10')
         top_frame.pack(fill=tk.X, side=tk.TOP)
+
+        self.language_var = tk.StringVar(value=self.get_language_display(self.current_language))
+        self.language_label = ttk.Label(top_frame, text='Language:')
+        self.language_label.grid(row=0, column=2, sticky=tk.E, pady=5, padx=(20, 5))
+        self.language_selector = ttk.Combobox(
+            top_frame,
+            width=16,
+            textvariable=self.language_var,
+            values=list(LANGUAGE_OPTIONS.values()),
+            state='readonly')
+        self.language_selector.grid(row=0, column=3, sticky=tk.W, pady=5)
+        self.language_selector.bind('<<ComboboxSelected>>', self.on_language_changed)
 
         # URL input
         ttk.Label(top_frame, text='Video URL(s):').grid(row=0, column=0, sticky=tk.W, pady=5)
@@ -102,6 +733,7 @@ class YtDlpGUI:
         self.status_var = tk.StringVar(value='Ready')
         status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
         status_bar.pack(fill=tk.X, side=tk.BOTTOM)
+        self.status_var.set(self.tr('Ready'))
 
     def create_general_tab(self):
         """Create General Options tab"""
@@ -1265,70 +1897,81 @@ class YtDlpGUI:
 
     # File browser methods
     def browse_batch_file(self):
-        filename = filedialog.askopenfilename(title='Select Batch File',
-                                               filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Batch File'),
+            filetypes=[(self.tr('Text Files'), '*.txt'), (self.tr('All Files'), '*.*')])
         if filename:
             self.batch_file_entry.delete(0, tk.END)
             self.batch_file_entry.insert(0, filename)
 
     def browse_config_file(self):
-        filename = filedialog.askopenfilename(title='Select Config File',
-                                               filetypes=[('Config Files', '*.conf'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Config File'),
+            filetypes=[(self.tr('Config Files'), '*.conf'), (self.tr('All Files'), '*.*')])
         if filename:
             self.config_location.delete(0, tk.END)
             self.config_location.insert(0, filename)
 
     def browse_archive_file(self):
-        filename = filedialog.asksaveasfilename(title='Select Archive File',
-                                                 defaultextension='.txt',
-                                                 filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        filename = filedialog.asksaveasfilename(
+            title=self.tr('Select Archive File'),
+            defaultextension='.txt',
+            filetypes=[(self.tr('Text Files'), '*.txt'), (self.tr('All Files'), '*.*')])
         if filename:
             self.download_archive.delete(0, tk.END)
             self.download_archive.insert(0, filename)
 
     def browse_output_dir(self):
-        dirname = filedialog.askdirectory(title='Select Output Directory')
+        dirname = filedialog.askdirectory(title=self.tr('Select Output Directory'))
         if dirname:
             self.output_dir.delete(0, tk.END)
             self.output_dir.insert(0, dirname)
 
     def browse_info_json(self):
-        filename = filedialog.askopenfilename(title='Select Info JSON',
-                                               filetypes=[('JSON Files', '*.json'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Info JSON'),
+            filetypes=[(self.tr('JSON Files'), '*.json'), (self.tr('All Files'), '*.*')])
         if filename:
             self.load_info_json.delete(0, tk.END)
             self.load_info_json.insert(0, filename)
 
     def browse_cache_dir(self):
-        dirname = filedialog.askdirectory(title='Select Cache Directory')
+        dirname = filedialog.askdirectory(title=self.tr('Select Cache Directory'))
         if dirname:
             self.cache_dir.delete(0, tk.END)
             self.cache_dir.insert(0, dirname)
 
     def browse_client_cert(self):
-        filename = filedialog.askopenfilename(title='Select Client Certificate',
-                                               filetypes=[('PEM Files', '*.pem'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Client Certificate'),
+            filetypes=[(self.tr('PEM Files'), '*.pem'), (self.tr('All Files'), '*.*')])
         if filename:
             self.client_certificate.delete(0, tk.END)
             self.client_certificate.insert(0, filename)
 
     def browse_client_key(self):
-        filename = filedialog.askopenfilename(title='Select Client Certificate Key',
-                                               filetypes=[('PEM Files', '*.pem'), ('Key Files', '*.key'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Client Certificate Key'),
+            filetypes=[
+                (self.tr('PEM Files'), '*.pem'),
+                (self.tr('Key Files'), '*.key'),
+                (self.tr('All Files'), '*.*')])
         if filename:
             self.client_certificate_key.delete(0, tk.END)
             self.client_certificate_key.insert(0, filename)
 
     def browse_ffmpeg(self):
-        filename = filedialog.askopenfilename(title='Select FFmpeg Binary',
-                                               filetypes=[('Executable Files', '*.exe'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select FFmpeg Binary'),
+            filetypes=[(self.tr('Executable Files'), '*.exe'), (self.tr('All Files'), '*.*')])
         if filename:
             self.ffmpeg_location.delete(0, tk.END)
             self.ffmpeg_location.insert(0, filename)
 
     def browse_cookies(self):
-        filename = filedialog.askopenfilename(title='Select Cookies File',
-                                               filetypes=[('Text Files', '*.txt'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Select Cookies File'),
+            filetypes=[(self.tr('Text Files'), '*.txt'), (self.tr('All Files'), '*.*')])
         if filename:
             self.cookies.delete(0, tk.END)
             self.cookies.insert(0, filename)
@@ -1750,8 +2393,8 @@ class YtDlpGUI:
     def run_ytdlp(self, args):
         """Run yt-dlp with given arguments in a separate thread"""
         try:
-            self.log_message(f'Running: yt-dlp {" ".join(args)}')
-            self.status_var.set('Downloading...')
+            self.log_message(f'{self.tr("Running: yt-dlp ")}{" ".join(args)}')
+            self.status_var.set(self.tr('Downloading...'))
 
             # Run yt-dlp process
             process = subprocess.Popen(
@@ -1770,24 +2413,24 @@ class YtDlpGUI:
             process.wait()
 
             if process.returncode == 0:
-                self.log_message('Download completed successfully!')
-                self.status_var.set('Ready')
+                self.log_message(self.tr('Download completed successfully!'))
+                self.status_var.set(self.tr('Ready'))
             else:
-                self.log_message(f'Process exited with code {process.returncode}')
-                self.status_var.set('Error')
+                self.log_message(self.translate_concat('Process exited with code ', process.returncode))
+                self.status_var.set(self.tr('Error'))
 
         except FileNotFoundError:
-            self.log_message('ERROR: yt-dlp not found. Please make sure yt-dlp is installed and in your PATH.')
-            self.status_var.set('Error')
+            self.log_message(self.tr('ERROR: yt-dlp not found. Please make sure yt-dlp is installed and in your PATH.'))
+            self.status_var.set(self.tr('Error'))
         except Exception as e:
-            self.log_message(f'ERROR: {str(e)}')
-            self.status_var.set('Error')
+            self.log_message(self.translate_concat('ERROR: ', str(e)))
+            self.status_var.set(self.tr('Error'))
 
     def start_download(self):
         """Start download in a separate thread"""
         args = self.build_command_args()
         if not args or (not self.url_entry.get().strip() and not self.batch_file_entry.get().strip()):
-            messagebox.showwarning('No URL', 'Please enter a URL or batch file to download.')
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
         # Clear console
@@ -1803,7 +2446,7 @@ class YtDlpGUI:
         """List available formats for the video"""
         url = self.url_entry.get().strip()
         if not url:
-            messagebox.showwarning('No URL', 'Please enter a URL.')
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
 
         self.console.config(state=tk.NORMAL)
@@ -1817,7 +2460,7 @@ class YtDlpGUI:
         """Extract video information"""
         url = self.url_entry.get().strip()
         if not url:
-            messagebox.showwarning('No URL', 'Please enter a URL.')
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
 
         self.console.config(state=tk.NORMAL)
@@ -1840,59 +2483,64 @@ class YtDlpGUI:
             try:
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     self.config = json.load(f)
-                self.apply_config()
             except Exception as e:
                 print(f'Error loading config: {e}')
 
-    def save_config(self):
+    def save_config(self, silent=False):
         """Save current configuration to file"""
         try:
             self.config = self.get_current_config()
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=2)
+            self.write_config_to_disk(self.config)
         except Exception as e:
-            messagebox.showerror('Error', f'Failed to save configuration: {e}')
+            if not silent:
+                messagebox.showerror(self.tr('Error'), self.translate_concat('Failed to save configuration: ', e))
 
     def load_config_dialog(self):
         """Load configuration from a file dialog"""
-        filename = filedialog.askopenfilename(title='Load Configuration',
-                                               filetypes=[('JSON Files', '*.json'), ('All Files', '*.*')])
+        filename = filedialog.askopenfilename(
+            title=self.tr('Load Configuration'),
+            filetypes=[(self.tr('JSON Files'), '*.json'), (self.tr('All Files'), '*.*')])
         if filename:
             try:
                 with open(filename, 'r', encoding='utf-8') as f:
                     self.config = json.load(f)
                 self.apply_config()
-                messagebox.showinfo('Success', 'Configuration loaded successfully!')
+                messagebox.showinfo(self.tr('Success'), self.tr('Configuration loaded successfully!'))
             except Exception as e:
-                messagebox.showerror('Error', f'Failed to load configuration: {e}')
+                messagebox.showerror(self.tr('Error'), self.translate_concat('Failed to load configuration: ', e))
 
     def save_config_dialog(self):
         """Save configuration to a file dialog"""
-        filename = filedialog.asksaveasfilename(title='Save Configuration',
-                                                 defaultextension='.json',
-                                                 filetypes=[('JSON Files', '*.json'), ('All Files', '*.*')])
+        filename = filedialog.asksaveasfilename(
+            title=self.tr('Save Configuration'),
+            defaultextension='.json',
+            filetypes=[(self.tr('JSON Files'), '*.json'), (self.tr('All Files'), '*.*')])
         if filename:
             try:
                 self.config = self.get_current_config()
                 with open(filename, 'w', encoding='utf-8') as f:
                     json.dump(self.config, f, indent=2)
-                messagebox.showinfo('Success', 'Configuration saved successfully!')
+                messagebox.showinfo(self.tr('Success'), self.tr('Configuration saved successfully!'))
             except Exception as e:
-                messagebox.showerror('Error', f'Failed to save configuration: {e}')
+                messagebox.showerror(self.tr('Error'), self.translate_concat('Failed to save configuration: ', e))
 
     def get_current_config(self):
         """Get current configuration from GUI"""
-        # This would be a comprehensive method to extract all settings
-        # For brevity, we'll implement a basic version
-        config = {}
-        # Add implementation to extract all GUI values
+        config = dict(self.config)
+        config['language'] = self.current_language
+        config['language_initialized'] = True
         return config
 
     def apply_config(self):
         """Apply loaded configuration to GUI"""
-        # This would set all GUI elements based on loaded config
-        # For brevity, we'll implement a basic version
-        pass
+        language = self.config.get('language', self.current_language)
+        if language not in LANGUAGE_OPTIONS:
+            language = 'en'
+        self.current_language = language
+        if hasattr(self, 'language_var'):
+            self.language_var.set(self.get_language_display(language))
+        self.apply_localization()
+        self.status_var.set(self.tr('Ready'))
 
 
 def main():
