@@ -617,8 +617,6 @@ class YtDlpGUI:
         self._built_tabs = set()
         self._stateful_controls = {}
         self._pending_gui_state = {}
-        self._notebook_height_job = None
-        self._tab_height_cache = {}
 
         # Configuration storage
         self.config = {}
@@ -802,7 +800,6 @@ class YtDlpGUI:
         """Maximize and foreground the window on launch."""
         self.maximize_window()
         self.bring_to_front()
-        self.schedule_notebook_height_update()
 
     def add_lazy_tab(self, key, title, builder):
         """Register a notebook tab whose contents are built on first access."""
@@ -832,31 +829,6 @@ class YtDlpGUI:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         return scrollable_frame
 
-    def stretch_form_layout(self, container, stretch_columns=(1,)):
-        """Make form controls expand horizontally within grid-based tabs."""
-        for column in stretch_columns:
-            container.grid_columnconfigure(column, weight=1)
-
-        for child in container.winfo_children():
-            manager = child.winfo_manager()
-            if manager != 'grid':
-                continue
-
-            info = child.grid_info()
-            column = int(info.get('column', 0))
-            columnspan = int(info.get('columnspan', 1))
-
-            should_stretch = (
-                child.winfo_class() in {'TEntry', 'Entry', 'TCombobox', 'Text', 'ScrolledText'}
-                or (child.winfo_class() == 'TFrame' and column >= min(stretch_columns)))
-
-            if should_stretch:
-                sticky = str(info.get('sticky', '')).lower()
-                if 'e' not in sticky or 'w' not in sticky:
-                    child.grid_configure(sticky=tk.EW)
-            elif child.winfo_class() in {'TCheckbutton', 'Checkbutton'} and columnspan > 1:
-                child.grid_configure(sticky=tk.W)
-
     def ensure_tab_built(self, frame):
         """Build a tab's contents only once."""
         if frame in self._built_tabs:
@@ -879,41 +851,6 @@ class YtDlpGUI:
             return
         frame = self.root.nametowidget(selected)
         self.ensure_tab_built(frame)
-        cached_height = self._tab_height_cache.get(frame)
-        if cached_height:
-            self.notebook.configure(height=cached_height)
-        self.schedule_notebook_height_update()
-
-    def schedule_notebook_height_update(self):
-        """Coalesce notebook height recomputation during rapid UI changes."""
-        if not hasattr(self, 'notebook'):
-            return
-        if self._notebook_height_job is not None:
-            try:
-                self.root.after_cancel(self._notebook_height_job)
-            except tk.TclError:
-                pass
-        self._notebook_height_job = self.root.after_idle(self.update_notebook_height)
-
-    def update_notebook_height(self):
-        """Size the notebook to the active tab's content instead of filling all free space."""
-        self._notebook_height_job = None
-        if not hasattr(self, 'notebook'):
-            return
-
-        selected = self.notebook.select()
-        if not selected:
-            return
-
-        frame = self.root.nametowidget(selected)
-        self.ensure_tab_built(frame)
-        frame.update_idletasks()
-
-        requested_height = max(frame.winfo_reqheight() + 60, 460)
-        available_height = max(int(self.root.winfo_height() * 0.74), 520)
-        target_height = min(requested_height, available_height)
-        self._tab_height_cache[frame] = target_height
-        self.notebook.configure(height=target_height)
 
     def register_stateful_controls(self, attribute_names):
         """Track GUI-only controls so they can be serialized independently."""
@@ -1013,7 +950,7 @@ class YtDlpGUI:
 
         # Notebook for tabbed options
         self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.X, expand=False, padx=10, pady=5)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
         # Register tabs for lazy creation
@@ -1037,7 +974,7 @@ class YtDlpGUI:
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
-        console_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10), ipady=5)
+        console_frame.pack(fill=tk.BOTH, expand=False, padx=10, pady=(0, 10), ipady=5)
 
         self.console = scrolledtext.ScrolledText(console_frame, height=8, wrap=tk.WORD, state=tk.DISABLED)
         self.console.pack(fill=tk.BOTH, expand=True)
@@ -1102,7 +1039,7 @@ class YtDlpGUI:
         config_frame = ttk.Frame(scrollable_frame)
         config_frame.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         self.config_location = ttk.Entry(config_frame, width=40)
-        self.config_location.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.config_location.pack(side=tk.LEFT)
         ttk.Button(config_frame, text='Browse...', command=self.browse_config_file).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1122,7 +1059,7 @@ class YtDlpGUI:
         archive_frame = ttk.Frame(scrollable_frame)
         archive_frame.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         self.download_archive = ttk.Entry(archive_frame, width=40)
-        self.download_archive.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.download_archive.pack(side=tk.LEFT)
         ttk.Button(archive_frame, text='Browse...', command=self.browse_archive_file).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1130,7 +1067,6 @@ class YtDlpGUI:
         self.max_downloads = ttk.Entry(scrollable_frame, width=10)
         self.max_downloads.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_network_tab(self, frame=None):
         """Create Network Options tab"""
@@ -1208,7 +1144,6 @@ class YtDlpGUI:
         self.fragment_retries = ttk.Entry(scrollable_frame, width=10)
         self.fragment_retries.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_geo_restriction_tab(self, frame=None):
         """Create Geo-restriction tab"""
@@ -1242,7 +1177,6 @@ class YtDlpGUI:
         self.geo_bypass_ip_block.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         ttk.Label(frame, text='(CIDR notation)').grid(row=row, column=2, sticky=tk.W, pady=5)
         row += 1
-        self.stretch_form_layout(frame)
 
     def create_video_selection_tab(self, frame=None):
         """Create Video Selection tab"""
@@ -1331,7 +1265,6 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='No break on existing (--no-break-on-existing)',
                         variable=self.no_break_on_existing).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_download_tab(self, frame=None):
         """Create Download Options tab"""
@@ -1397,7 +1330,6 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='Use MPEG-TS container for HLS (--hls-use-mpegts)',
                         variable=self.hls_use_mpegts).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_filesystem_tab(self, frame=None):
         """Create Filesystem Options tab"""
@@ -1416,7 +1348,7 @@ class YtDlpGUI:
         output_frame = ttk.Frame(scrollable_frame)
         output_frame.grid(row=row, column=1, columnspan=3, sticky=tk.W, pady=5, padx=5)
         self.output_dir = ttk.Entry(output_frame, width=50)
-        self.output_dir.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.output_dir.pack(side=tk.LEFT)
         ttk.Button(output_frame, text='Browse...', command=self.browse_output_dir).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1494,7 +1426,7 @@ class YtDlpGUI:
         load_frame = ttk.Frame(scrollable_frame)
         load_frame.grid(row=row, column=1, columnspan=3, sticky=tk.W, pady=5, padx=5)
         self.load_info_json = ttk.Entry(load_frame, width=50)
-        self.load_info_json.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.load_info_json.pack(side=tk.LEFT)
         ttk.Button(load_frame, text='Browse...', command=self.browse_info_json).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1502,7 +1434,7 @@ class YtDlpGUI:
         cache_frame = ttk.Frame(scrollable_frame)
         cache_frame.grid(row=row, column=1, columnspan=3, sticky=tk.W, pady=5, padx=5)
         self.cache_dir = ttk.Entry(cache_frame, width=50)
-        self.cache_dir.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.cache_dir.pack(side=tk.LEFT)
         ttk.Button(cache_frame, text='Browse...', command=self.browse_cache_dir).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1515,7 +1447,6 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='Delete cache directory contents (--rm-cache-dir)',
                         variable=self.rm_cache_dir).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_video_format_tab(self, frame=None):
         """Create Video Format Options tab"""
@@ -1565,7 +1496,6 @@ class YtDlpGUI:
                                                 state='readonly')
         self.audio_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_subtitle_tab(self, frame=None):
         """Create Subtitle Options tab"""
@@ -1621,7 +1551,6 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='Do not embed thumbnail (--no-embed-thumbnail)',
                         variable=self.no_embed_thumbnail).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_authentication_tab(self, frame=None):
         """Create Authentication Options tab"""
@@ -1674,7 +1603,7 @@ class YtDlpGUI:
         cert_frame = ttk.Frame(scrollable_frame)
         cert_frame.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         self.client_certificate = ttk.Entry(cert_frame, width=40)
-        self.client_certificate.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.client_certificate.pack(side=tk.LEFT)
         ttk.Button(cert_frame, text='Browse...', command=self.browse_client_cert).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1682,7 +1611,7 @@ class YtDlpGUI:
         key_frame = ttk.Frame(scrollable_frame)
         key_frame.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         self.client_certificate_key = ttk.Entry(key_frame, width=40)
-        self.client_certificate_key.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.client_certificate_key.pack(side=tk.LEFT)
         ttk.Button(key_frame, text='Browse...', command=self.browse_client_key).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1690,7 +1619,6 @@ class YtDlpGUI:
         self.client_certificate_password = ttk.Entry(scrollable_frame, width=30, show='*')
         self.client_certificate_password.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_postprocessing_tab(self, frame=None):
         """Create Post-processing Options tab"""
@@ -1775,7 +1703,7 @@ class YtDlpGUI:
         ffmpeg_frame = ttk.Frame(scrollable_frame)
         ffmpeg_frame.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         self.ffmpeg_location = ttk.Entry(ffmpeg_frame, width=40)
-        self.ffmpeg_location.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.ffmpeg_location.pack(side=tk.LEFT)
         ttk.Button(ffmpeg_frame, text='Browse...', command=self.browse_ffmpeg).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
@@ -1783,7 +1711,6 @@ class YtDlpGUI:
         self.postprocessor_args = ttk.Entry(scrollable_frame, width=50)
         self.postprocessor_args.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_thumbnail_tab(self, frame=None):
         """Create Thumbnail Options tab"""
@@ -1812,7 +1739,6 @@ class YtDlpGUI:
                                                 state='readonly')
         self.convert_thumbnails.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(frame)
 
     def create_verbosity_tab(self, frame=None):
         """Create Verbosity and Simulation tab"""
@@ -1920,7 +1846,6 @@ class YtDlpGUI:
         ttk.Label(scrollable_frame, text='Progress template:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.progress_template.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_workarounds_tab(self, frame=None):
         """Create Workarounds tab"""
@@ -1973,7 +1898,6 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='Use legacy server connect (--legacy-server-connect)',
                         variable=self.legacy_server_connect).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-        self.stretch_form_layout(scrollable_frame)
 
     def create_sponsorblock_tab(self, frame=None):
         """Create SponsorBlock Options tab"""
@@ -2017,7 +1941,6 @@ class YtDlpGUI:
         self.sponsorblock_api = ttk.Entry(frame, width=50)
         self.sponsorblock_api.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-        self.stretch_form_layout(frame)
 
     def create_extractor_tab(self, frame=None):
         """Create Extractor Options tab"""
@@ -2062,10 +1985,9 @@ class YtDlpGUI:
         cookies_frame = ttk.Frame(frame)
         cookies_frame.grid(row=row, column=1, columnspan=3, sticky=tk.W, pady=5, padx=5)
         self.cookies = ttk.Entry(cookies_frame, width=50)
-        self.cookies.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.cookies.pack(side=tk.LEFT)
         ttk.Button(cookies_frame, text='Browse...', command=self.browse_cookies).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
-        self.stretch_form_layout(frame)
 
     def create_advanced_tab(self, frame=None):
         """Create Advanced Options tab"""
@@ -2092,7 +2014,6 @@ class YtDlpGUI:
         ttk.Button(button_frame, text='Generate Command', command=self.generate_command).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Copy to Clipboard', command=self.copy_command).pack(side=tk.LEFT, padx=5)
         row += 1
-        self.stretch_form_layout(frame)
 
     # File browser methods
     def browse_batch_file(self):
@@ -2757,7 +2678,6 @@ class YtDlpGUI:
         self.apply_localization()
         self.apply_pending_gui_state()
         self.status_var.set(self.tr('Ready'))
-        self.schedule_notebook_height_update()
 
 
 def main():
