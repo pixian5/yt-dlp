@@ -28,6 +28,16 @@ LANGUAGE_OPTIONS = {
 }
 
 
+GUI_DEFAULT_STATE = {
+    'url_entry': 'https://www.youtube.com/watch?v=DtPmasWzmu4&list=PLqyUAJYG3AWzd2mRGVLgCNKXbFcE4mAAk',
+    'cookies_from_browser': 'chrome',
+    'format': 'bv*+ba/b',
+    'merge_output_format': 'mp4',
+    'output_dir': '/Users/x/Documents/yt',
+    'output_template': '%(playlist_index)s-%(title)s.%(ext)s',
+}
+
+
 TRANSLATIONS = {
     'zh': {
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp 图形界面 - 视频下载配置',
@@ -615,9 +625,10 @@ class YtDlpGUI:
         self._notebook_tab_texts = {}
         self._tab_builders = {}
         self._built_tabs = set()
+        self._tab_controls = {}
         self._stateful_controls = {}
         self._pending_gui_state = {}
-        self._background_tab_queue = []
+        self._active_tab_frame = None
 
         # Configuration storage
         self.config = {}
@@ -801,7 +812,6 @@ class YtDlpGUI:
         """Maximize and foreground the window on launch."""
         self.maximize_window()
         self.bring_to_front()
-        self.root.after(200, self.prebuild_remaining_tabs)
 
     def add_lazy_tab(self, key, title, builder):
         """Register a notebook tab whose contents are built on first access."""
@@ -819,29 +829,40 @@ class YtDlpGUI:
             if tab_frame == frame:
                 before_names = set(self.__dict__)
                 builder(frame)
-                self.register_stateful_controls(set(self.__dict__) - before_names)
+                new_names = self._tab_controls.get(frame) or (set(self.__dict__) - before_names)
+                self.register_stateful_controls(new_names)
+                self._tab_controls[frame] = new_names
                 self._built_tabs.add(frame)
                 self.localize_widget_tree(frame)
                 self.apply_pending_gui_state()
                 return
 
-    def prebuild_remaining_tabs(self):
-        """Warm up remaining tabs incrementally so first switch feels instant."""
-        if not hasattr(self, 'notebook'):
-            return
-        if not self._background_tab_queue:
-            self._background_tab_queue = [
-                self.root.nametowidget(tab_id)
-                for tab_id in self.notebook.tabs()
-                if self.root.nametowidget(tab_id) not in self._built_tabs
-            ]
-        if not self._background_tab_queue:
+    def snapshot_control_value(self, widget):
+        if isinstance(widget, tk.BooleanVar):
+            return bool(widget.get())
+        if isinstance(widget, (ttk.Entry, ttk.Combobox)):
+            return widget.get()
+        if isinstance(widget, scrolledtext.ScrolledText):
+            return widget.get('1.0', tk.END).rstrip('\n')
+        return None
+
+    def unload_tab(self, frame):
+        """Destroy inactive tab contents while preserving their GUI state."""
+        if frame not in self._built_tabs:
             return
 
-        frame = self._background_tab_queue.pop(0)
-        self.ensure_tab_built(frame)
-        if self._background_tab_queue:
-            self.root.after(40, self.prebuild_remaining_tabs)
+        for name in self._tab_controls.get(frame, set()):
+            widget = self._stateful_controls.pop(name, None)
+            if widget is None:
+                continue
+            value = self.snapshot_control_value(widget)
+            if value is not None:
+                self._pending_gui_state[name] = value
+
+        for child in frame.winfo_children():
+            child.destroy()
+
+        self._built_tabs.discard(frame)
 
     def on_tab_changed(self, _event=None):
         if not hasattr(self, 'notebook'):
@@ -850,7 +871,11 @@ class YtDlpGUI:
         if not selected:
             return
         frame = self.root.nametowidget(selected)
+        previous_frame = self._active_tab_frame
+        if previous_frame is not None and previous_frame != frame:
+            self.unload_tab(previous_frame)
         self.ensure_tab_built(frame)
+        self._active_tab_frame = frame
 
     def register_stateful_controls(self, attribute_names):
         """Track GUI-only controls so they can be serialized independently."""
@@ -868,6 +893,9 @@ class YtDlpGUI:
             self.ensure_tab_built(frame)
 
     def _set_entry_value(self, widget, value):
+        if isinstance(widget, ttk.Combobox):
+            widget.set(value)
+            return
         widget.delete(0, tk.END)
         if value:
             widget.insert(0, value)
@@ -971,6 +999,7 @@ class YtDlpGUI:
         self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
         self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
         self.ensure_tab_built(general_frame)
+        self._active_tab_frame = general_frame
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
@@ -2787,7 +2816,11 @@ class YtDlpGUI:
         if language not in LANGUAGE_OPTIONS:
             language = 'en'
         self.current_language = language
-        self._pending_gui_state = dict(self.config.get('gui_state', {}))
+        gui_state = dict(self.config.get('gui_state', {}))
+        for key, value in GUI_DEFAULT_STATE.items():
+            if not gui_state.get(key):
+                gui_state[key] = value
+        self._pending_gui_state = gui_state
         if hasattr(self, 'language_var'):
             self.language_var.set(self.get_language_display(language))
         self.apply_localization()
