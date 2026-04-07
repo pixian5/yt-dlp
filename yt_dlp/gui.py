@@ -193,6 +193,90 @@ TRANSLATIONS = {
         '(key:val[,val] format)': '（key:val[,val] 格式）',
         '(One argument per line or space-separated)': '（每行一个参数，或用空格分隔）',
         '(0-10, 0 = best)': '（0-10，0 为最佳）',
+        'Ignore errors (--ignore-errors)': '忽略错误（--ignore-errors）',
+        'Ignore warnings (--no-warnings)': '忽略警告（--no-warnings）',
+        'Abort on error (--abort-on-error)': '出错时中止（--abort-on-error）',
+        'Download only video, not playlist (--no-playlist)': '仅下载视频，不下载播放列表（--no-playlist）',
+        'Download playlist (--yes-playlist)': '下载播放列表（--yes-playlist）',
+        'Mark videos as watched (--mark-watched)': '将视频标记为已观看（--mark-watched）',
+        'Do not mark videos as watched (--no-mark-watched)': '不要将视频标记为已观看（--no-mark-watched）',
+        'Force IPv4 (--force-ipv4)': '强制使用 IPv4（--force-ipv4）',
+        'Force IPv6 (--force-ipv6)': '强制使用 IPv6（--force-ipv6）',
+        'Enable file:// URLs (--enable-file-urls)': '启用 file:// URL（--enable-file-urls）',
+        'Bypass geo restriction (--geo-bypass)': '绕过地区限制（--geo-bypass）',
+        'Do not bypass geo restriction (--no-geo-bypass)': '不绕过地区限制（--no-geo-bypass）',
+        'Break on existing (--break-on-existing)': '遇到已存在文件时中断（--break-on-existing）',
+        'Break on reject (--break-on-reject)': '遇到拒绝项时中断（--break-on-reject）',
+        'No break on existing (--no-break-on-existing)': '遇到已存在文件时不中断（--no-break-on-existing）',
+        'Do not resize buffer (--no-resize-buffer)': '不调整缓冲区大小（--no-resize-buffer）',
+        'Test mode - do not download (--test)': '测试模式，不实际下载（--test）',
+        'Prefer native HLS downloader (--hls-prefer-native)': '优先使用原生 HLS 下载器（--hls-prefer-native）',
+        'Prefer ffmpeg for HLS (--hls-prefer-ffmpeg)': 'HLS 优先使用 ffmpeg（--hls-prefer-ffmpeg）',
+        'Use MPEG-TS container for HLS (--hls-use-mpegts)': 'HLS 使用 MPEG-TS 容器（--hls-use-mpegts）',
+        'Restrict filenames to ASCII (--restrict-filenames)': '将文件名限制为 ASCII（--restrict-filenames）',
+        'Allow Unicode in filenames (--no-restrict-filenames)': '允许文件名使用 Unicode（--no-restrict-filenames）',
+        'Force Windows-compatible filenames (--windows-filenames)': '强制使用 Windows 兼容文件名（--windows-filenames）',
+        'Do not overwrite files (--no-overwrites)': '不覆盖文件（--no-overwrites）',
+        'Force overwrite files (--force-overwrites)': '强制覆盖文件（--force-overwrites）',
+        'Continue partially downloaded files (--continue)': '继续下载未完成文件（--continue）',
+        'Do not continue downloads (--no-continue)': '不要继续未完成下载（--no-continue）',
+        'Do not use .part files (--no-part)': '不使用 .part 文件（--no-part）',
+        'Do not use Last-modified header (--no-mtime)': '不使用 Last-Modified 头（--no-mtime）',
+        'Write description to .description file (--write-description)': '将描述写入 .description 文件（--write-description）',
+        'Write metadata to .info.json file (--write-info-json)': '将元数据写入 .info.json 文件（--write-info-json）',
+        'Write annotations to .annotations.xml (--write-annotations)': '将注释写入 .annotations.xml（--write-annotations）',
+        'Write comments to .comments.json (--write-comments)': '将评论写入 .comments.json（--write-comments）',
+        'Disable filesystem caching (--no-cache-dir)': '禁用文件系统缓存（--no-cache-dir）',
+        'Delete cache directory contents (--rm-cache-dir)': '删除缓存目录内容（--rm-cache-dir）',
+        'Prefer free formats (--prefer-free-formats)': '优先自由格式（--prefer-free-formats）',
+        'Check available formats (--check-formats)': '检查可用格式（--check-formats）',
+        'Write subtitle file (--write-subs)': '写入字幕文件（--write-subs）',
+        'Write automatic subtitle file (--write-auto-subs)': '写入自动字幕文件（--write-auto-subs）',
+        'List available subtitles (--list-subs)': '列出可用字幕（--list-subs）',
+        'Embed subtitles (--embed-subs)': '嵌入字幕（--embed-subs）',
+        'Do not embed subtitles (--no-embed-subs)': '不嵌入字幕（--no-embed-subs）',
+        'Embed thumbnail (--embed-thumbnail)': '嵌入缩略图（--embed-thumbnail）',
+        'Do not embed thumbnail (--no-embed-thumbnail)': '不嵌入缩略图（--no-embed-thumbnail）',
+        'Use .netrc authentication (--netrc)': '使用 .netrc 认证（--netrc）',
+        'Extract audio (-x, --extract-audio)': '提取音频（-x, --extract-audio）',
+        'Keep video file after conversion (--keep-video)': '转换后保留视频文件（--keep-video）',
+        'Do not keep video file (--no-keep-video)': '转换后不保留视频文件（--no-keep-video）',
+        'Embed metadata (--embed-metadata)': '嵌入元数据（--embed-metadata）',
+        'Embed chapter markers (--embed-chapters)': '嵌入章节标记（--embed-chapters）',
+        'Embed info.json (--embed-info-json)': '嵌入 info.json（--embed-info-json）',
+        'Add metadata to file (--add-metadata)': '向文件添加元数据（--add-metadata）',
+        'Write thumbnail image (--write-thumbnail)': '写入缩略图（--write-thumbnail）',
+        'Write all thumbnail formats (--write-all-thumbnails)': '写入所有缩略图格式（--write-all-thumbnails）',
+        'List available thumbnails (--list-thumbnails)': '列出可用缩略图（--list-thumbnails）',
+        'Quiet mode (-q, --quiet)': '安静模式（-q, --quiet）',
+        'No warnings (--no-warnings)': '不显示警告（--no-warnings）',
+        'Verbose output (-v, --verbose)': '详细输出（-v, --verbose）',
+        'Simulate, do not download (-s, --simulate)': '模拟模式，不下载（-s, --simulate）',
+        'Skip download (--skip-download)': '跳过下载（--skip-download）',
+        'Get title (--get-title)': '获取标题（--get-title）',
+        'Get ID (--get-id)': '获取 ID（--get-id）',
+        'Get URL (--get-url)': '获取 URL（--get-url）',
+        'Get thumbnail URL (--get-thumbnail)': '获取缩略图 URL（--get-thumbnail）',
+        'Get description (--get-description)': '获取描述（--get-description）',
+        'Get duration (--get-duration)': '获取时长（--get-duration）',
+        'Get filename (--get-filename)': '获取文件名（--get-filename）',
+        'Get format (--get-format)': '获取格式（--get-format）',
+        'Dump JSON info (--dump-json)': '导出 JSON 信息（--dump-json）',
+        'Dump single JSON (--dump-single-json)': '导出单个 JSON（--dump-single-json）',
+        'Print JSON info (--print-json)': '打印 JSON 信息（--print-json）',
+        'Show progress (--progress)': '显示进度（--progress）',
+        'Hide progress (--no-progress)': '隐藏进度（--no-progress）',
+        'Display progress in console title (--console-title)': '在控制台标题显示进度（--console-title）',
+        'Skip SSL certificate validation (--no-check-certificate)': '跳过 SSL 证书验证（--no-check-certificate）',
+        'Prefer insecure connections (--prefer-insecure)': '优先不安全连接（--prefer-insecure）',
+        'Bidirectional text workaround (--bidi-workaround)': '双向文本兼容处理（--bidi-workaround）',
+        'Use legacy server connect (--legacy-server-connect)': '使用旧版服务器连接方式（--legacy-server-connect）',
+        'Mark SponsorBlock chapters (--sponsorblock-mark)': '标记 SponsorBlock 章节（--sponsorblock-mark）',
+        'Remove SponsorBlock segments (--sponsorblock-remove)': '移除 SponsorBlock 片段（--sponsorblock-remove）',
+        'Disable SponsorBlock (--no-sponsorblock)': '禁用 SponsorBlock（--no-sponsorblock）',
+        'Allow dynamic MPD manifests (--allow-dynamic-mpd)': '允许动态 MPD 清单（--allow-dynamic-mpd）',
+        'Ignore dynamic MPD manifests (--ignore-dynamic-mpd)': '忽略动态 MPD 清单（--ignore-dynamic-mpd）',
+        'Split HLS segments on discontinuity (--hls-split-discontinuity)': '在不连续处拆分 HLS 分片（--hls-split-discontinuity）',
     },
     'ru': {
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Настройка загрузки видео',
@@ -526,10 +610,13 @@ class YtDlpGUI:
 
     def __init__(self, root):
         self.root = root
-        self.root.geometry('1200x800')
         self.base_title = 'yt-dlp GUI - Video Downloader Configuration'
         self._translatable_widgets = {}
         self._notebook_tab_texts = {}
+        self._tab_builders = {}
+        self._built_tabs = set()
+        self._stateful_controls = {}
+        self._pending_gui_state = {}
 
         # Configuration storage
         self.config = {}
@@ -541,6 +628,8 @@ class YtDlpGUI:
         self.create_widgets()
         self.apply_localization()
         self.apply_config()
+        self.root.after(50, self.present_window)
+        self.root.protocol('WM_DELETE_WINDOW', self.on_window_close)
 
         # Set window icon (if available)
         try:
@@ -656,8 +745,147 @@ class YtDlpGUI:
         self.status_var.set(self.tr('Ready'))
         self.save_config(silent=True)
 
+    def maximize_window(self):
+        """Open the window in a maximized state with a geometry fallback."""
+        self.root.update_idletasks()
+        try:
+            self.root.state('zoomed')
+            return
+        except tk.TclError:
+            pass
+
+        try:
+            self.root.attributes('-zoomed', True)
+            return
+        except tk.TclError:
+            pass
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        self.root.geometry(f'{screen_width}x{screen_height}+0+0')
+
+    def bring_to_front(self):
+        """Request focus and foreground status, especially on macOS."""
+        self.root.update_idletasks()
+        self.root.deiconify()
+        self.root.lift()
+
+        try:
+            self.root.focus_force()
+        except tk.TclError:
+            pass
+
+        try:
+            self.root.attributes('-topmost', True)
+            self.root.after(300, lambda: self.root.attributes('-topmost', False))
+        except tk.TclError:
+            pass
+
+        if sys.platform == 'darwin':
+            try:
+                script = (
+                    'tell application "System Events"\n'
+                    f'    set frontmost of the first process whose unix id is {os.getpid()} to true\n'
+                    'end tell'
+                )
+                subprocess.run(
+                    ['osascript', '-e', script],
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+    def present_window(self):
+        """Maximize and foreground the window on launch."""
+        self.maximize_window()
+        self.bring_to_front()
+
+    def add_lazy_tab(self, key, title, builder):
+        """Register a notebook tab whose contents are built on first access."""
+        frame = ttk.Frame(self.notebook, padding='10')
+        self.notebook.add(frame, text=title)
+        self._tab_builders[key] = (frame, builder, title)
+        self._notebook_tab_texts[frame] = title
+        return frame
+
+    def ensure_tab_built(self, frame):
+        """Build a tab's contents only once."""
+        if frame in self._built_tabs:
+            return
+        for _key, (tab_frame, builder, _title) in self._tab_builders.items():
+            if tab_frame == frame:
+                before_names = set(self.__dict__)
+                builder(frame)
+                self.register_stateful_controls(set(self.__dict__) - before_names)
+                self._built_tabs.add(frame)
+                self.localize_widget_tree(frame)
+                self.apply_pending_gui_state()
+                return
+
+    def on_tab_changed(self, _event=None):
+        if not hasattr(self, 'notebook'):
+            return
+        selected = self.notebook.select()
+        if not selected:
+            return
+        frame = self.root.nametowidget(selected)
+        self.ensure_tab_built(frame)
+
+    def register_stateful_controls(self, attribute_names):
+        """Track GUI-only controls so they can be serialized independently."""
+        for name in attribute_names:
+            value = getattr(self, name, None)
+            if isinstance(value, (tk.BooleanVar, ttk.Entry, ttk.Combobox, scrolledtext.ScrolledText)):
+                self._stateful_controls[name] = value
+
+    def ensure_all_tabs_built(self):
+        """Build all tabs before full-state serialization."""
+        if not hasattr(self, 'notebook'):
+            return
+        for tab_id in self.notebook.tabs():
+            frame = self.root.nametowidget(tab_id)
+            self.ensure_tab_built(frame)
+
+    def _set_entry_value(self, widget, value):
+        widget.delete(0, tk.END)
+        if value:
+            widget.insert(0, value)
+
+    def _set_text_value(self, widget, value):
+        prior_state = str(widget.cget('state'))
+        if prior_state == tk.DISABLED:
+            widget.config(state=tk.NORMAL)
+        widget.delete('1.0', tk.END)
+        if value:
+            widget.insert('1.0', value)
+        if prior_state == tk.DISABLED:
+            widget.config(state=tk.DISABLED)
+
+    def apply_pending_gui_state(self):
+        """Apply saved GUI-only state to controls that already exist."""
+        if not self._pending_gui_state:
+            return
+        for name, value in list(self._pending_gui_state.items()):
+            widget = self._stateful_controls.get(name)
+            if widget is None:
+                continue
+            if isinstance(widget, tk.BooleanVar):
+                widget.set(bool(value))
+            elif isinstance(widget, (ttk.Entry, ttk.Combobox)):
+                self._set_entry_value(widget, value or '')
+            elif isinstance(widget, scrolledtext.ScrolledText):
+                self._set_text_value(widget, value or '')
+            del self._pending_gui_state[name]
+
+    def on_window_close(self):
+        """Persist GUI-only state on close and then exit."""
+        self.save_config(silent=True)
+        self.root.destroy()
+
     def create_widgets(self):
         """Create all GUI widgets"""
+        before_names = set(self.__dict__)
         # Top frame for URL input and quick actions
         top_frame = ttk.Frame(self.root, padding='10')
         top_frame.pack(fill=tk.X, side=tk.TOP)
@@ -703,24 +931,26 @@ class YtDlpGUI:
         # Notebook for tabbed options
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
-        # Create tabs for different option categories
-        self.create_general_tab()
-        self.create_network_tab()
-        self.create_geo_restriction_tab()
-        self.create_video_selection_tab()
-        self.create_download_tab()
-        self.create_filesystem_tab()
-        self.create_video_format_tab()
-        self.create_subtitle_tab()
-        self.create_authentication_tab()
-        self.create_postprocessing_tab()
-        self.create_thumbnail_tab()
-        self.create_verbosity_tab()
-        self.create_workarounds_tab()
-        self.create_sponsorblock_tab()
-        self.create_extractor_tab()
-        self.create_advanced_tab()
+        # Register tabs for lazy creation
+        general_frame = self.add_lazy_tab('general', 'General', self.create_general_tab)
+        self.add_lazy_tab('network', 'Network', self.create_network_tab)
+        self.add_lazy_tab('geo', 'Geo-restriction', self.create_geo_restriction_tab)
+        self.add_lazy_tab('video_selection', 'Video Selection', self.create_video_selection_tab)
+        self.add_lazy_tab('download', 'Download', self.create_download_tab)
+        self.add_lazy_tab('filesystem', 'Filesystem', self.create_filesystem_tab)
+        self.add_lazy_tab('video_format', 'Video Format', self.create_video_format_tab)
+        self.add_lazy_tab('subtitles', 'Subtitles', self.create_subtitle_tab)
+        self.add_lazy_tab('authentication', 'Authentication', self.create_authentication_tab)
+        self.add_lazy_tab('postprocessing', 'Post-processing', self.create_postprocessing_tab)
+        self.add_lazy_tab('thumbnail', 'Thumbnail', self.create_thumbnail_tab)
+        self.add_lazy_tab('verbosity', 'Verbosity/Simulation', self.create_verbosity_tab)
+        self.add_lazy_tab('workarounds', 'Workarounds', self.create_workarounds_tab)
+        self.add_lazy_tab('sponsorblock', 'SponsorBlock', self.create_sponsorblock_tab)
+        self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
+        self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
+        self.ensure_tab_built(general_frame)
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
@@ -734,11 +964,11 @@ class YtDlpGUI:
         status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
         status_bar.pack(fill=tk.X, side=tk.BOTTOM)
         self.status_var.set(self.tr('Ready'))
+        self.register_stateful_controls(set(self.__dict__) - before_names)
 
-    def create_general_tab(self):
+    def create_general_tab(self, frame=None):
         """Create General Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='General')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         # Scrollable frame
         canvas = tk.Canvas(frame)
@@ -833,10 +1063,9 @@ class YtDlpGUI:
         self.max_downloads.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_network_tab(self):
+    def create_network_tab(self, frame=None):
         """Create Network Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Network')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -921,10 +1150,9 @@ class YtDlpGUI:
         self.fragment_retries.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_geo_restriction_tab(self):
+    def create_geo_restriction_tab(self, frame=None):
         """Create Geo-restriction tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Geo-restriction')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         row = 0
 
@@ -955,10 +1183,9 @@ class YtDlpGUI:
         ttk.Label(frame, text='(CIDR notation)').grid(row=row, column=2, sticky=tk.W, pady=5)
         row += 1
 
-    def create_video_selection_tab(self):
+    def create_video_selection_tab(self, frame=None):
         """Create Video Selection tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Video Selection')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1054,10 +1281,9 @@ class YtDlpGUI:
                         variable=self.no_break_on_existing).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-    def create_download_tab(self):
+    def create_download_tab(self, frame=None):
         """Create Download Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Download')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1130,10 +1356,9 @@ class YtDlpGUI:
                         variable=self.hls_use_mpegts).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-    def create_filesystem_tab(self):
+    def create_filesystem_tab(self, frame=None):
         """Create Filesystem Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Filesystem')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1258,10 +1483,9 @@ class YtDlpGUI:
                         variable=self.rm_cache_dir).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-    def create_video_format_tab(self):
+    def create_video_format_tab(self, frame=None):
         """Create Video Format Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Video Format')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1318,10 +1542,9 @@ class YtDlpGUI:
         self.audio_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_subtitle_tab(self):
+    def create_subtitle_tab(self, frame=None):
         """Create Subtitle Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Subtitles')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1384,10 +1607,9 @@ class YtDlpGUI:
                         variable=self.no_embed_thumbnail).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-    def create_authentication_tab(self):
+    def create_authentication_tab(self, frame=None):
         """Create Authentication Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Authentication')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1463,10 +1685,9 @@ class YtDlpGUI:
         self.client_certificate_password.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_postprocessing_tab(self):
+    def create_postprocessing_tab(self, frame=None):
         """Create Post-processing Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Post-processing')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1566,10 +1787,9 @@ class YtDlpGUI:
         self.postprocessor_args.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_thumbnail_tab(self):
+    def create_thumbnail_tab(self, frame=None):
         """Create Thumbnail Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Thumbnail')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         row = 0
 
@@ -1595,10 +1815,9 @@ class YtDlpGUI:
         self.convert_thumbnails.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_verbosity_tab(self):
+    def create_verbosity_tab(self, frame=None):
         """Create Verbosity and Simulation tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Verbosity/Simulation')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1713,10 +1932,9 @@ class YtDlpGUI:
         self.progress_template.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_workarounds_tab(self):
+    def create_workarounds_tab(self, frame=None):
         """Create Workarounds tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Workarounds')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
@@ -1776,10 +1994,9 @@ class YtDlpGUI:
                         variable=self.legacy_server_connect).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-    def create_sponsorblock_tab(self):
+    def create_sponsorblock_tab(self, frame=None):
         """Create SponsorBlock Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='SponsorBlock')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         row = 0
 
@@ -1820,10 +2037,9 @@ class YtDlpGUI:
         self.sponsorblock_api.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
-    def create_extractor_tab(self):
+    def create_extractor_tab(self, frame=None):
         """Create Extractor Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Extractor')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         row = 0
 
@@ -1868,10 +2084,9 @@ class YtDlpGUI:
         ttk.Button(cookies_frame, text='Browse...', command=self.browse_cookies).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
 
-    def create_advanced_tab(self):
+    def create_advanced_tab(self, frame=None):
         """Create Advanced Options tab"""
-        frame = ttk.Frame(self.notebook, padding='10')
-        self.notebook.add(frame, text='Advanced')
+        frame = frame or ttk.Frame(self.notebook, padding='10')
 
         row = 0
 
@@ -2526,10 +2741,25 @@ class YtDlpGUI:
 
     def get_current_config(self):
         """Get current configuration from GUI"""
-        config = dict(self.config)
-        config['language'] = self.current_language
-        config['language_initialized'] = True
-        return config
+        self.ensure_all_tabs_built()
+
+        gui_state = {}
+        for name, widget in self._stateful_controls.items():
+            if name in {'language_selector', 'console', 'generated_cmd'}:
+                continue
+            if isinstance(widget, tk.BooleanVar):
+                gui_state[name] = bool(widget.get())
+            elif isinstance(widget, (ttk.Entry, ttk.Combobox)):
+                gui_state[name] = widget.get()
+            elif isinstance(widget, scrolledtext.ScrolledText):
+                gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
+
+        return {
+            'config_version': 1,
+            'language': self.current_language,
+            'language_initialized': True,
+            'gui_state': gui_state,
+        }
 
     def apply_config(self):
         """Apply loaded configuration to GUI"""
@@ -2537,9 +2767,11 @@ class YtDlpGUI:
         if language not in LANGUAGE_OPTIONS:
             language = 'en'
         self.current_language = language
+        self._pending_gui_state = dict(self.config.get('gui_state', {}))
         if hasattr(self, 'language_var'):
             self.language_var.set(self.get_language_display(language))
         self.apply_localization()
+        self.apply_pending_gui_state()
         self.status_var.set(self.tr('Ready'))
 
 
