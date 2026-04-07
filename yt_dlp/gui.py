@@ -31,7 +31,7 @@ LANGUAGE_OPTIONS = {
 GUI_DEFAULT_STATE = {
     'url_entry': 'https://www.youtube.com/watch?v=DtPmasWzmu4&list=PLqyUAJYG3AWzd2mRGVLgCNKXbFcE4mAAk',
     'cookies_from_browser': 'chrome',
-    'format': 'bv*[height<=1080]+ba/b[height<=1080]',
+    'format': 'bv*[height<=1080]+ba',
     'merge_output_format': 'mp4',
     'output_dir': '/Users/x/Documents/yt',
     'output_template': '%(playlist_index)s-%(title)s.%(ext)s',
