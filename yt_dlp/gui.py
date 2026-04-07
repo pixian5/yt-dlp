@@ -617,6 +617,7 @@ class YtDlpGUI:
         self._built_tabs = set()
         self._stateful_controls = {}
         self._pending_gui_state = {}
+        self._background_tab_queue = []
 
         # Configuration storage
         self.config = {}
@@ -800,6 +801,7 @@ class YtDlpGUI:
         """Maximize and foreground the window on launch."""
         self.maximize_window()
         self.bring_to_front()
+        self.root.after(200, self.prebuild_remaining_tabs)
 
     def add_lazy_tab(self, key, title, builder):
         """Register a notebook tab whose contents are built on first access."""
@@ -822,6 +824,24 @@ class YtDlpGUI:
                 self.localize_widget_tree(frame)
                 self.apply_pending_gui_state()
                 return
+
+    def prebuild_remaining_tabs(self):
+        """Warm up remaining tabs incrementally so first switch feels instant."""
+        if not hasattr(self, 'notebook'):
+            return
+        if not self._background_tab_queue:
+            self._background_tab_queue = [
+                self.root.nametowidget(tab_id)
+                for tab_id in self.notebook.tabs()
+                if self.root.nametowidget(tab_id) not in self._built_tabs
+            ]
+        if not self._background_tab_queue:
+            return
+
+        frame = self._background_tab_queue.pop(0)
+        self.ensure_tab_built(frame)
+        if self._background_tab_queue:
+            self.root.after(40, self.prebuild_remaining_tabs)
 
     def on_tab_changed(self, _event=None):
         if not hasattr(self, 'notebook'):
