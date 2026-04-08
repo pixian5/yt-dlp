@@ -36,6 +36,7 @@ GUI_DEFAULT_STATE = {
     'output_dir': '/Users/x/Documents/yt',
     'output_template': '%(playlist_index)s-%(title)s.%(ext)s',
     'include_private_videos': True,
+    'playlist_subdir': False,
 }
 
 
@@ -227,6 +228,7 @@ TRANSLATIONS = {
         'Use MPEG-TS container for HLS (--hls-use-mpegts)': 'HLS 使用 MPEG-TS 容器（--hls-use-mpegts）',
         'Restrict filenames to ASCII (--restrict-filenames)': '将文件名限制为 ASCII（--restrict-filenames）',
         'Allow Unicode in filenames (--no-restrict-filenames)': '允许文件名使用 Unicode（--no-restrict-filenames）',
+        'Create playlist subfolder for playlist downloads': '播放列表下载时创建同名文件夹',
         'Force Windows-compatible filenames (--windows-filenames)': '强制使用 Windows 兼容文件名（--windows-filenames）',
         'Do not overwrite files (--no-overwrites)': '不覆盖文件（--no-overwrites）',
         'Force overwrite files (--force-overwrites)': '强制覆盖文件（--force-overwrites）',
@@ -1461,6 +1463,14 @@ class YtDlpGUI:
                         variable=self.no_restrict_filenames).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
+        self.playlist_subdir = tk.BooleanVar()
+        ttk.Checkbutton(
+            scrollable_frame,
+            text='Create playlist subfolder for playlist downloads',
+            variable=self.playlist_subdir,
+        ).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
+        row += 1
+
         self.windows_filenames = tk.BooleanVar()
         ttk.Checkbutton(scrollable_frame, text='Force Windows-compatible filenames (--windows-filenames)',
                         variable=self.windows_filenames).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
@@ -2393,6 +2403,9 @@ class YtDlpGUI:
         # Filesystem options
         output_template = self.output_template.get()
         output_dir = self.output_dir.get()
+        if output_template and self.playlist_subdir.get() and '%(playlist)s/' not in output_template and '%(playlist)s\\' not in output_template:
+            # Avoid duplicating the playlist folder if the user already encoded it in the template path.
+            output_template = os.path.join('%(playlist)s', output_template)
         if output_dir and output_template:
             args.extend(['-o', os.path.join(output_dir, output_template)])
         elif output_template:
