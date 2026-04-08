@@ -35,6 +35,7 @@ GUI_DEFAULT_STATE = {
     'merge_output_format': 'mp4',
     'output_dir': '/Users/x/Documents/yt',
     'output_template': '%(playlist_index)s-%(title)s.%(ext)s',
+    'include_private_videos': True,
 }
 
 
@@ -208,6 +209,7 @@ TRANSLATIONS = {
         'Abort on error (--abort-on-error)': '出错时中止（--abort-on-error）',
         'Download only video, not playlist (--no-playlist)': '仅下载视频，不下载播放列表（--no-playlist）',
         'Download playlist (--yes-playlist)': '下载播放列表（--yes-playlist）',
+        'Include private/unavailable videos in YouTube playlists': '包含 YouTube 播放列表中的私有/不可用视频',
         'Mark videos as watched (--mark-watched)': '将视频标记为已观看（--mark-watched）',
         'Do not mark videos as watched (--no-mark-watched)': '不要将视频标记为已观看（--no-mark-watched）',
         'Force IPv4 (--force-ipv4)': '强制使用 IPv4（--force-ipv4）',
@@ -1061,6 +1063,14 @@ class YtDlpGUI:
         self.yes_playlist = tk.BooleanVar()
         ttk.Checkbutton(scrollable_frame, text='Download playlist (--yes-playlist)',
                         variable=self.yes_playlist).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
+        row += 1
+
+        self.include_private_videos = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            scrollable_frame,
+            text='Include private/unavailable videos in YouTube playlists',
+            variable=self.include_private_videos,
+        ).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
 
         self.mark_watched = tk.BooleanVar()
@@ -2260,6 +2270,8 @@ class YtDlpGUI:
             args.append('--no-playlist')
         if self.yes_playlist.get():
             args.append('--yes-playlist')
+        if not self.include_private_videos.get():
+            args.extend(['--compat-options', 'no-youtube-unavailable-videos'])
         if self.mark_watched.get():
             args.append('--mark-watched')
         if self.no_mark_watched.get():
