@@ -2711,7 +2711,7 @@ class YtDlpGUI:
     def generate_command(self):
         """Generate and display the yt-dlp command"""
         args = self.build_command_args()
-        cmd = ['yt-dlp'] + args
+        cmd = [sys.executable, '-m', 'yt_dlp'] + args
         cmd_str = ' '.join(f'"{arg}"' if ' ' in arg else arg for arg in cmd)
 
         self.generated_cmd.config(state=tk.NORMAL)
@@ -2735,7 +2735,7 @@ class YtDlpGUI:
 
             # Run yt-dlp process
             self.current_process = subprocess.Popen(
-                ['yt-dlp'] + args,
+                [sys.executable, '-m', 'yt_dlp'] + args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
@@ -2806,7 +2806,7 @@ class YtDlpGUI:
         try:
             self.log_message(self.tr("Checking if URL is a playlist..."))
             process = subprocess.Popen(
-                ['yt-dlp', '-J', '--flat-playlist', url],
+                [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', url],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
