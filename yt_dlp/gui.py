@@ -972,6 +972,7 @@ class YtDlpGUI:
         button_frame = ttk.Frame(top_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10)
         ttk.Button(button_frame, text='Download', command=self.start_download, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text='Stop Download', command=self.stop_download, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Extract Info', command=self.extract_info, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Load Config', command=self.load_config_dialog, width=15).pack(side=tk.LEFT, padx=5)
@@ -987,6 +988,7 @@ class YtDlpGUI:
 
         # Register tabs for lazy creation
         general_frame = self.add_lazy_tab('general', 'General', self.create_general_tab)
+        self.playlist_tab_frame = self.add_lazy_tab('playlist', 'Playlist', self.create_playlist_tab)
         self.add_lazy_tab('network', 'Network', self.create_network_tab)
         self.add_lazy_tab('geo', 'Geo-restriction', self.create_geo_restriction_tab)
         self.add_lazy_tab('video_selection', 'Video Selection', self.create_video_selection_tab)
@@ -1018,6 +1020,51 @@ class YtDlpGUI:
         status_bar.pack(fill=tk.X, side=tk.BOTTOM)
         self.status_var.set(self.tr('Ready'))
         self.register_stateful_controls(set(self.__dict__) - before_names)
+
+    def create_playlist_tab(self, frame=None):
+        """Create Playlist Select tab"""
+        frame = frame or ttk.Frame(self.notebook, padding='10')
+
+        # Select All / None controls
+        top_ctrl = ttk.Frame(frame)
+        top_ctrl.pack(fill=tk.X, pady=(0, 5))
+        self.playlist_select_all_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            top_ctrl, 
+            text="Select All / Deselect All", 
+            variable=self.playlist_select_all_var, 
+            command=self._on_playlist_select_all
+        ).pack(side=tk.LEFT)
+        self.register_translatable_widget(top_ctrl.winfo_children()[0], 'Select All / Deselect All')
+        
+        # Scrollable area for videos
+        canvas = tk.Canvas(frame)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            '<Configure>',
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.playlist_videos_frame = scrollable_frame
+        self.playlist_video_vars = []
+        
+        lbl = ttk.Label(scrollable_frame, text="No playlist loaded yet.")
+        lbl.pack(pady=10)
+        self.register_translatable_widget(lbl, "No playlist loaded yet.")
+
+    def _on_playlist_select_all(self):
+        state = self.playlist_select_all_var.get()
+        if hasattr(self, 'playlist_video_vars'):
+            for var in self.playlist_video_vars:
+                var.set(state)
 
     def create_general_tab(self, frame=None):
         """Create General Options tab"""
@@ -2687,13 +2734,14 @@ class YtDlpGUI:
             self.status_var.set(self.tr('Downloading...'))
 
             # Run yt-dlp process
-            process = subprocess.Popen(
+            self.current_process = subprocess.Popen(
                 ['yt-dlp'] + args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
                 bufsize=1
             )
+            process = self.current_process
 
             # Read output line by line
             for line in process.stdout:
@@ -2701,10 +2749,14 @@ class YtDlpGUI:
                 self.root.update_idletasks()
 
             process.wait()
+            self.current_process = None
 
             if process.returncode == 0:
                 self.log_message(self.tr('Download completed successfully!'))
                 self.status_var.set(self.tr('Ready'))
+            elif process.returncode == -15:
+                self.log_message(self.tr('Download stopped by user.'))
+                self.status_var.set(self.tr('Stopped'))
             else:
                 self.log_message(self.translate_concat('Process exited with code ', process.returncode))
                 self.status_var.set(self.tr('Error'))
@@ -2716,6 +2768,17 @@ class YtDlpGUI:
             self.log_message(self.translate_concat('ERROR: ', str(e)))
             self.status_var.set(self.tr('Error'))
 
+    def stop_download(self):
+        if hasattr(self, 'current_process') and self.current_process:
+            self.log_message(self.tr('Stopping download...'))
+            self.current_process.terminate()
+            try:
+                self.current_process.kill()
+            except Exception:
+                pass
+        else:
+            self.log_message(self.tr('No download currently running.'))
+
     def start_download(self):
         """Start download in a separate thread"""
         args = self.build_command_args()
@@ -2723,7 +2786,84 @@ class YtDlpGUI:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
-        # Clear console
+        url = self.url_entry.get().strip()
+        batch_file = self.batch_file_entry.get().strip()
+        
+        if url and not batch_file:
+            if getattr(self, 'playlist_parsed_url', None) != url:
+                # Need to check if it's a playlist first
+                self.console.config(state=tk.NORMAL)
+                self.console.delete('1.0', tk.END)
+                self.console.config(state=tk.DISABLED)
+                self.status_var.set(self.tr('Checking URL...'))
+                thread = threading.Thread(target=self._check_and_start_download, args=(url, args), daemon=True)
+                thread.start()
+                return
+
+        self._start_download_actual(args)
+
+    def _check_and_start_download(self, url, original_args):
+        try:
+            self.log_message(self.tr("Checking if URL is a playlist..."))
+            process = subprocess.Popen(
+                ['yt-dlp', '-J', '--flat-playlist', url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                bufsize=1
+            )
+            stdout, stderr = process.communicate()
+            if process.returncode == 0:
+                info = json.loads(stdout)
+                if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
+                    self.playlist_parsed_url = url
+                    self.playlist_entries_data = info['entries']
+                    self.root.after(0, self._show_playlist_tab, info.get('title', 'Playlist'))
+                    return
+        except Exception as e:
+            self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
+        
+        self.root.after(0, self._start_download_actual, original_args)
+
+    def _show_playlist_tab(self, temp_title):
+        self.log_message(self.tr("Playlist detected. Please select videos to download."))
+        self.status_var.set(self.tr('Playlist detected'))
+        if hasattr(self, 'playlist_tab_frame'):
+            self.ensure_tab_built(self.playlist_tab_frame)
+            self.notebook.select(self.playlist_tab_frame)
+            # clear inside playlist_videos_frame
+            for child in self.playlist_videos_frame.winfo_children():
+                child.destroy()
+            self.playlist_video_vars = []
+            
+            for i, entry in enumerate(self.playlist_entries_data):
+                var = tk.BooleanVar(value=True)
+                self.playlist_video_vars.append(var)
+                title = entry.get('title') or entry.get('id') or f'Video {i+1}'
+                ttk.Checkbutton(
+                    self.playlist_videos_frame,
+                    text=f"{i+1}. {title}",
+                    variable=var
+                ).pack(anchor=tk.W, pady=2)
+            self.playlist_select_all_var.set(True)
+
+    def _start_download_actual(self, args):
+        url = self.url_entry.get().strip()
+        if getattr(self, 'playlist_parsed_url', None) == url and hasattr(self, 'playlist_video_vars'):
+            selected_indices = [str(i+1) for i, var in enumerate(self.playlist_video_vars) if var.get()]
+            if not selected_indices:
+                messagebox.showwarning(self.tr('No Videos Selected'), self.tr('Please select at least one video to download.'))
+                return
+            pl_items = ",".join(selected_indices)
+            
+            try:
+                idx = args.index('--playlist-items')
+                args.pop(idx)
+                args.pop(idx)
+            except ValueError:
+                pass
+            args.extend(['--playlist-items', pl_items])
+
         self.console.config(state=tk.NORMAL)
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
