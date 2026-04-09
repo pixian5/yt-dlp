@@ -20,7 +20,13 @@ if __name__ == '__main__':
 
     try:
         import yt_dlp
-        yt_dlp.main_gui()
+        # If called with -m yt_dlp (as used by the GUI subprocess), run the CLI main
+        if len(sys.argv) > 2 and sys.argv[1:3] == ['-m', 'yt_dlp']:
+            original_argv = sys.argv[:]
+            sys.argv = [original_argv[0]] + original_argv[3:]
+            yt_dlp.main()
+        else:
+            yt_dlp.main_gui()
     except ImportError:
         print('ERROR: Unable to import yt_dlp module.')
         print('Please make sure yt-dlp is properly installed.')
