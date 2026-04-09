@@ -9,6 +9,7 @@ or
     python -m yt_dlp.gui
 """
 
+import os
 import sys
 
 if __name__ == '__main__':
@@ -17,6 +18,13 @@ if __name__ == '__main__':
     if not getattr(sys, 'frozen', False):
         path = os.path.realpath(os.path.abspath(__file__))
         sys.path.insert(0, os.path.dirname(path))
+    else:
+        # Set SSL_CERT_FILE for frozen app on macOS
+        try:
+            import certifi
+            os.environ['SSL_CERT_FILE'] = certifi.where()
+        except ImportError:
+            pass
 
     try:
         import yt_dlp
