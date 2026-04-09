@@ -54,6 +54,8 @@ TRANSLATIONS = {
         'Save Config': '保存配置',
         'Parse Playlist': '解析播放列表',
         'Stop': '停止',
+        'Exclude private videos': '隐藏私有视频',
+        'Reverse order': '播放列表倒序',
         'Output Console': '输出控制台',
         'Ready': '就绪',
         'General': '常规',
@@ -1031,9 +1033,10 @@ class YtDlpGUI:
         """Create Playlist Select tab"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
 
-        # Select All / None controls
+        # Select All / None controls and other options
         top_ctrl = ttk.Frame(frame)
         top_ctrl.pack(fill=tk.X, pady=(0, 5))
+        
         self.playlist_select_all_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             top_ctrl, 
@@ -1042,34 +1045,71 @@ class YtDlpGUI:
             command=self._on_playlist_select_all
         ).pack(side=tk.LEFT)
         self.register_translatable_widget(top_ctrl.winfo_children()[0], 'Select All / Deselect All')
+
+        self.playlist_reverse_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            top_ctrl,
+            text="Reverse order",
+            variable=self.playlist_reverse_var,
+            command=self._on_playlist_option_changed
+        ).pack(side=tk.LEFT, padx=(20, 0))
+        self.register_translatable_widget(top_ctrl.winfo_children()[1], 'Reverse order')
+
+        self.playlist_exclude_private_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(
+            top_ctrl,
+            text="Exclude private videos",
+            variable=self.playlist_exclude_private_var,
+            command=self._on_playlist_option_changed
+        ).pack(side=tk.LEFT, padx=(20, 0))
+        self.register_translatable_widget(top_ctrl.winfo_children()[2], 'Exclude private videos')
         
         # Scrollable area for videos
-        canvas = tk.Canvas(frame)
-        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas)
+        self.playlist_canvas = tk.Canvas(frame)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=self.playlist_canvas.yview)
+        scrollable_frame = ttk.Frame(self.playlist_canvas)
 
         scrollable_frame.bind(
             '<Configure>',
-            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+            lambda e: self.playlist_canvas.configure(scrollregion=self.playlist_canvas.bbox('all'))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
-        canvas.configure(yscrollcommand=scrollbar.set)
+        self.playlist_canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        self.playlist_canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.playlist_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         self.playlist_videos_frame = scrollable_frame
-        self.playlist_video_vars = []
+        self.playlist_video_vars = {} # Use dict to store index -> var map
         
+        # Bind mouse wheel to canvas
+        self.playlist_canvas.bind_all('<MouseWheel>', self._on_playlist_mousewheel)
+        self.playlist_canvas.bind_all('<Button-4>', self._on_playlist_mousewheel)
+        self.playlist_canvas.bind_all('<Button-5>', self._on_playlist_mousewheel)
+
         lbl = ttk.Label(scrollable_frame, text="No playlist loaded yet.")
         lbl.pack(pady=10)
         self.register_translatable_widget(lbl, "No playlist loaded yet.")
 
+    def _on_playlist_mousewheel(self, event):
+        # Only scroll if the playlist tab is active
+        if self.notebook.select() == str(self.playlist_tab_frame):
+            if event.num == 4: # Linux scroll up
+                self.playlist_canvas.yview_scroll(-1, "units")
+            elif event.num == 5: # Linux scroll down
+                self.playlist_canvas.yview_scroll(1, "units")
+            else: # Windows/Mac
+                self.playlist_canvas.yview_scroll(int(-1*(event.delta)), "units")
+
+    def _on_playlist_option_changed(self):
+        if hasattr(self, 'playlist_entries_data') and self.playlist_entries_data:
+            self.root.after(0, self._show_playlist_tab, "Playlist")
+
     def _on_playlist_select_all(self):
         state = self.playlist_select_all_var.get()
         if hasattr(self, 'playlist_video_vars'):
-            for var in self.playlist_video_vars:
+            for var in self.playlist_video_vars.values():
                 var.set(state)
 
     def create_general_tab(self, frame=None):
@@ -2859,25 +2899,39 @@ class YtDlpGUI:
             # clear inside playlist_videos_frame
             for child in self.playlist_videos_frame.winfo_children():
                 child.destroy()
-            self.playlist_video_vars = []
             
-            for i, entry in enumerate(self.playlist_entries_data):
-                var = tk.BooleanVar(value=True)
-                self.playlist_video_vars.append(var)
+            self.playlist_video_vars = {}
+            
+            entries = self.playlist_entries_data
+            display_data = []
+            for i, entry in enumerate(entries):
                 title = entry.get('title') or entry.get('id') or f'Video {i+1}'
+                # Check for private video
+                if title == '[Private video]' and self.playlist_exclude_private_var.get():
+                    continue
+                display_data.append((i + 1, title))
+            
+            if self.playlist_reverse_var.get():
+                display_data.reverse()
+            
+            for original_idx, title in display_data:
+                var = tk.BooleanVar(value=True)
+                self.playlist_video_vars[original_idx] = var
                 ttk.Checkbutton(
                     self.playlist_videos_frame,
-                    text=f"{i+1}. {title}",
+                    text=f"{original_idx}. {title}",
                     variable=var
                 ).pack(anchor=tk.W, pady=2)
+                
             self.playlist_select_all_var.set(True)
 
     def _start_download_actual(self, args):
         url = self.url_entry.get().strip()
         if getattr(self, 'playlist_parsed_url', None) == url and hasattr(self, 'playlist_video_vars'):
-            selected_indices = [str(i+1) for i, var in enumerate(self.playlist_video_vars) if var.get()]
+            selected_indices = [str(idx) for idx, var in self.playlist_video_vars.items() if var.get()]
             if not selected_indices:
                 messagebox.showwarning(self.tr('No Videos Selected'), self.tr('Please select at least one video to download.'))
+                self.root.after(0, self._restore_download_button)
                 return
             pl_items = ",".join(selected_indices)
             
