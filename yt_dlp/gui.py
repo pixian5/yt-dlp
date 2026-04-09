@@ -52,6 +52,8 @@ TRANSLATIONS = {
         'Extract Info': '提取信息',
         'Load Config': '加载配置',
         'Save Config': '保存配置',
+        'Parse Playlist': '解析播放列表',
+        'Stop': '停止',
         'Output Console': '输出控制台',
         'Ready': '就绪',
         'General': '常规',
@@ -597,6 +599,8 @@ TRANSLATIONS = {
         'Running: yt-dlp ': 'Wird ausgefuehrt: yt-dlp ',
         'Downloading...': 'Lade herunter...',
         'Download completed successfully!': 'Download erfolgreich abgeschlossen!',
+        'Parse Playlist': 'Playlist parsen',
+        'Stop': 'Stopp',
         'Process exited with code ': 'Prozess beendet mit Code ',
         'Command copied to clipboard!': 'Befehl in die Zwischenablage kopiert!',
         'No URL': 'Keine URL',
@@ -971,8 +975,10 @@ class YtDlpGUI:
         # Quick action buttons
         button_frame = ttk.Frame(top_frame)
         button_frame.grid(row=2, column=0, columnspan=2, pady=10)
-        ttk.Button(button_frame, text='Download', command=self.start_download, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text='Stop Download', command=self.stop_download, width=15).pack(side=tk.LEFT, padx=5)
+        self.download_btn = ttk.Button(button_frame, text='Download', command=self.on_download_btn_click, width=15)
+        self.download_btn.pack(side=tk.LEFT, padx=5)
+        self.playlist_btn = ttk.Button(button_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
+        self.playlist_btn.pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Extract Info', command=self.extract_info, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Load Config', command=self.load_config_dialog, width=15).pack(side=tk.LEFT, padx=5)
@@ -2750,6 +2756,7 @@ class YtDlpGUI:
 
             process.wait()
             self.current_process = None
+            self.root.after(0, self._restore_download_button)
 
             if process.returncode == 0:
                 self.log_message(self.tr('Download completed successfully!'))
@@ -2767,6 +2774,18 @@ class YtDlpGUI:
         except Exception as e:
             self.log_message(self.translate_concat('ERROR: ', str(e)))
             self.status_var.set(self.tr('Error'))
+            self.root.after(0, self._restore_download_button)
+
+    def _restore_download_button(self):
+        if hasattr(self, 'download_btn'):
+            self.download_btn.config(text=self.tr('Download'))
+            self._translatable_widgets[self.download_btn] = 'Download'
+
+    def on_download_btn_click(self):
+        if hasattr(self, 'current_process') and self.current_process:
+            self.stop_download()
+        else:
+            self.start_download()
 
     def stop_download(self):
         if hasattr(self, 'current_process') and self.current_process:
@@ -2786,23 +2805,26 @@ class YtDlpGUI:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
-        url = self.url_entry.get().strip()
-        batch_file = self.batch_file_entry.get().strip()
-        
-        if url and not batch_file:
-            if getattr(self, 'playlist_parsed_url', None) != url:
-                # Need to check if it's a playlist first
-                self.console.config(state=tk.NORMAL)
-                self.console.delete('1.0', tk.END)
-                self.console.config(state=tk.DISABLED)
-                self.status_var.set(self.tr('Checking URL...'))
-                thread = threading.Thread(target=self._check_and_start_download, args=(url, args), daemon=True)
-                thread.start()
-                return
+        # Change button to Stop
+        self.download_btn.config(text=self.tr('Stop'))
+        self._translatable_widgets[self.download_btn] = 'Stop'
 
         self._start_download_actual(args)
 
-    def _check_and_start_download(self, url, original_args):
+    def parse_playlist(self):
+        url = self.url_entry.get().strip()
+        if not url:
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
+            return
+        
+        self.console.config(state=tk.NORMAL)
+        self.console.delete('1.0', tk.END)
+        self.console.config(state=tk.DISABLED)
+        self.status_var.set(self.tr('Checking URL...'))
+        thread = threading.Thread(target=self._parse_playlist_only, args=(url,), daemon=True)
+        thread.start()
+
+    def _parse_playlist_only(self, url):
         try:
             self.log_message(self.tr("Checking if URL is a playlist..."))
             process = subprocess.Popen(
@@ -2820,10 +2842,13 @@ class YtDlpGUI:
                     self.playlist_entries_data = info['entries']
                     self.root.after(0, self._show_playlist_tab, info.get('title', 'Playlist'))
                     return
+                else:
+                    self.log_message(self.tr("Not a playlist or no entries found."))
+            else:
+                self.log_message(self.tr("Failed to parse playlist."))
         except Exception as e:
             self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
-        
-        self.root.after(0, self._start_download_actual, original_args)
+        self.status_var.set(self.tr('Ready'))
 
     def _show_playlist_tab(self, temp_title):
         self.log_message(self.tr("Playlist detected. Please select videos to download."))
