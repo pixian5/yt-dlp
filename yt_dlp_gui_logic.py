@@ -17,6 +17,8 @@ import subprocess
 import os
 import signal
 import shutil
+import tempfile
+import atexit
 
 
 LANGUAGE_OPTIONS = {
@@ -2415,6 +2417,13 @@ class YtDlpGUI:
         self.batch_file_entry.delete(0, tk.END)
         self.batch_file_entry.insert(0, clipboard_text)
         self.batch_file_entry.focus_set()
+        
+        # If it's a single URL and the main URL entry is empty, duplicate it there for convenience
+        lines = [l.strip() for l in clipboard_text.splitlines() if l.strip()]
+        if len(lines) == 1 and lines[0].startswith('http') and not self.url_entry.get().strip():
+            self.url_entry.delete(0, tk.END)
+            self.url_entry.insert(0, lines[0])
+            
         self.log_message(self.tr('Pasted playlist from clipboard.'))
 
     def browse_config_file(self):
@@ -2973,11 +2982,40 @@ class YtDlpGUI:
 
         # Batch file or URL
         if batch_file:
-            args.extend(['-a', batch_file])
+            if batch_file.startswith('http') and '\n' not in batch_file:
+                # Single URL in batch field
+                args.append(batch_file)
+            elif '\n' in batch_file or (not os.path.exists(batch_file) and batch_file.startswith('http')):
+                # Multi-line URLs or non-existent path that looks like URL/list
+                try:
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tf:
+                        tf.write(batch_file)
+                        temp_path = tf.name
+                    args.extend(['-a', temp_path])
+                    # Register for cleanup
+                    if not hasattr(self, '_temp_batch_files'):
+                        self._temp_batch_files = []
+                        atexit.register(self._cleanup_temp_files)
+                    self._temp_batch_files.append(temp_path)
+                except Exception as e:
+                    self.log_message(f'Error creating temporary batch file: {e}')
+                    args.extend(['-a', batch_file]) # Fallback
+            else:
+                args.extend(['-a', batch_file])
         elif url:
             args.append(url)
 
         return args
+
+    def _cleanup_temp_files(self):
+        if hasattr(self, '_temp_batch_files'):
+            for f in self._temp_batch_files:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except Exception:
+                    pass
+            self._temp_batch_files.clear()
 
     def generate_command(self):
         """Generate and display the yt-dlp command"""
@@ -3153,11 +3191,18 @@ class YtDlpGUI:
                         if skip:
                             skip = False
                             continue
-                        if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse', '-o', '-P', '--paths'):
-                            if arg in ('--playlist-items', '-o', '-P', '--paths'):
+                        # EXCLUDE batch file and redundant playlist items from individual tasks
+                        if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse', 
+                                   '-o', '-P', '--paths', '-a', '--batch-file'):
+                            if arg in ('--playlist-items', '-o', '-P', '--paths', '-a', '--batch-file'):
                                 skip = True
                             continue
+                        if arg == url: # Don't add the main URL yet
+                            continue
                         task_args.append(arg)
+                    
+                    # Always use the specific playlist URL for individual tasks
+                    task_args.append(url)
                     filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
                     # Remove unsave characters
                     filename_tpl = "".join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
@@ -3197,6 +3242,14 @@ class YtDlpGUI:
 
     def parse_playlist(self):
         url = self.url_entry.get().strip()
+        batch = self.batch_file_entry.get().strip()
+        
+        # If main URL is empty but batch has a URL, use it
+        if not url and batch.startswith('http') and '\n' not in batch:
+            url = batch
+            self.url_entry.delete(0, tk.END)
+            self.url_entry.insert(0, url)
+        
         if not url:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
