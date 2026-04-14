@@ -1013,8 +1013,14 @@ class YtDlpGUI:
         self.language_selector.bind('<<ComboboxSelected>>', self.on_language_changed)
 
         # URL input
-        self.paste_url_btn = ttk.Button(top_frame, text='Paste Link:', command=self.paste_url_from_clipboard)
-        self.paste_url_btn.grid(row=0, column=0, sticky=tk.W, pady=5)
+        url_btn_frame = ttk.Frame(top_frame)
+        url_btn_frame.grid(row=0, column=0, sticky=tk.W, pady=5)
+        
+        self.paste_url_btn = ttk.Button(url_btn_frame, text='Paste Link:', command=self.paste_url_from_clipboard)
+        self.paste_url_btn.pack(side=tk.LEFT)
+        
+        self.playlist_btn = ttk.Button(url_btn_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
+        self.playlist_btn.pack(side=tk.LEFT, padx=(5, 0))
         
         self.url_var = tk.StringVar()
         self.url_var.trace_add('write', self.on_url_changed)
@@ -1028,9 +1034,6 @@ class YtDlpGUI:
         
         batch_frame = ttk.Frame(top_frame)
         batch_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
-        
-        self.playlist_btn = ttk.Button(batch_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
-        self.playlist_btn.pack(side=tk.LEFT, padx=(0, 5))
         
         self.batch_file_entry = ttk.Entry(batch_frame)
         self.batch_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
