@@ -1109,6 +1109,7 @@ supported_js_runtimes.value['quickjs'] = _QuickJsRuntime
 supported_remote_components.value.append('ejs:github')
 supported_remote_components.value.append('ejs:npm')
 
+
 def main_gui():
     """Launch the GUI interface for yt-dlp"""
     try:

@@ -6,6 +6,7 @@ This module provides a comprehensive GUI interface using tkinter for easy config
 of all yt-dlp options without needing to remember command-line arguments.
 """
 
+import contextlib
 import json
 import locale
 import os
@@ -62,7 +63,6 @@ TRANSLATIONS = {
         'Network': '网络',
         'Geo-restriction': '地区限制',
         'Video Selection': '视频筛选',
-        'Download': '下载',
         'Filesystem': '文件系统',
         'Video Format': '视频格式',
         'Subtitles': '字幕',
@@ -654,10 +654,8 @@ class YtDlpGUI:
         self.root.protocol('WM_DELETE_WINDOW', self.on_window_close)
 
         # Set window icon (if available)
-        try:
+        with contextlib.suppress(Exception):
             self.root.iconname('yt-dlp')
-        except Exception:
-            pass
 
     def tr(self, text):
         """Translate UI text with English fallback."""
@@ -792,10 +790,8 @@ class YtDlpGUI:
         self.root.deiconify()
         self.root.lift()
 
-        try:
+        with contextlib.suppress(tk.TclError):
             self.root.focus_force()
-        except tk.TclError:
-            pass
 
         try:
             self.root.attributes('-topmost', True)
@@ -1036,34 +1032,34 @@ class YtDlpGUI:
         # Select All / None controls and other options
         top_ctrl = ttk.Frame(frame)
         top_ctrl.pack(fill=tk.X, pady=(0, 5))
-        
+
         self.playlist_select_all_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
-            top_ctrl, 
-            text="Select All / Deselect All", 
-            variable=self.playlist_select_all_var, 
-            command=self._on_playlist_select_all
+            top_ctrl,
+            text='Select All / Deselect All',
+            variable=self.playlist_select_all_var,
+            command=self._on_playlist_select_all,
         ).pack(side=tk.LEFT)
         self.register_translatable_widget(top_ctrl.winfo_children()[0], 'Select All / Deselect All')
 
         self.playlist_reverse_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             top_ctrl,
-            text="Reverse order",
+            text='Reverse order',
             variable=self.playlist_reverse_var,
-            command=self._on_playlist_option_changed
+            command=self._on_playlist_option_changed,
         ).pack(side=tk.LEFT, padx=(20, 0))
         self.register_translatable_widget(top_ctrl.winfo_children()[1], 'Reverse order')
 
         self.playlist_exclude_private_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             top_ctrl,
-            text="Exclude private videos",
+            text='Exclude private videos',
             variable=self.playlist_exclude_private_var,
-            command=self._on_playlist_option_changed
+            command=self._on_playlist_option_changed,
         ).pack(side=tk.LEFT, padx=(20, 0))
         self.register_translatable_widget(top_ctrl.winfo_children()[2], 'Exclude private videos')
-        
+
         # Scrollable area for videos
         self.playlist_canvas = tk.Canvas(frame)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=self.playlist_canvas.yview)
@@ -1071,7 +1067,7 @@ class YtDlpGUI:
 
         scrollable_frame.bind(
             '<Configure>',
-            lambda e: self.playlist_canvas.configure(scrollregion=self.playlist_canvas.bbox('all'))
+            lambda e: self.playlist_canvas.configure(scrollregion=self.playlist_canvas.bbox('all')),
         )
 
         self.playlist_canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
@@ -1079,32 +1075,32 @@ class YtDlpGUI:
 
         self.playlist_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
+
         self.playlist_videos_frame = scrollable_frame
-        self.playlist_video_vars = {} # Use dict to store index -> var map
-        
+        self.playlist_video_vars = {}  # Use dict to store index -> var map
+
         # Bind mouse wheel to canvas
         self.playlist_canvas.bind_all('<MouseWheel>', self._on_playlist_mousewheel)
         self.playlist_canvas.bind_all('<Button-4>', self._on_playlist_mousewheel)
         self.playlist_canvas.bind_all('<Button-5>', self._on_playlist_mousewheel)
 
-        lbl = ttk.Label(scrollable_frame, text="No playlist loaded yet.")
+        lbl = ttk.Label(scrollable_frame, text='No playlist loaded yet.')
         lbl.pack(pady=10)
-        self.register_translatable_widget(lbl, "No playlist loaded yet.")
+        self.register_translatable_widget(lbl, 'No playlist loaded yet.')
 
     def _on_playlist_mousewheel(self, event):
         # Only scroll if the playlist tab is active
         if self.notebook.select() == str(self.playlist_tab_frame):
-            if event.num == 4: # Linux scroll up
-                self.playlist_canvas.yview_scroll(-1, "units")
-            elif event.num == 5: # Linux scroll down
-                self.playlist_canvas.yview_scroll(1, "units")
-            else: # Windows/Mac
-                self.playlist_canvas.yview_scroll(int(-1*(event.delta)), "units")
+            if event.num == 4:  # Linux scroll up
+                self.playlist_canvas.yview_scroll(-1, 'units')
+            elif event.num == 5:  # Linux scroll down
+                self.playlist_canvas.yview_scroll(1, 'units')
+            else:  # Windows/Mac
+                self.playlist_canvas.yview_scroll(int(-1 * (event.delta)), 'units')
 
     def _on_playlist_option_changed(self):
         if hasattr(self, 'playlist_entries_data') and self.playlist_entries_data:
-            self.root.after(0, self._show_playlist_tab, "Playlist")
+            self.root.after(0, self._show_playlist_tab, 'Playlist')
 
     def _on_playlist_select_all(self):
         state = self.playlist_select_all_var.get()
@@ -1123,7 +1119,7 @@ class YtDlpGUI:
 
         scrollable_frame.bind(
             '<Configure>',
-            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all')),
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
@@ -1194,8 +1190,8 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='Flat playlist extraction:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.extract_flat = ttk.Combobox(scrollable_frame, width=20,
-                                          values=['', 'in_playlist', 'discard_in_playlist'],
-                                          state='readonly')
+                                         values=['', 'in_playlist', 'discard_in_playlist'],
+                                         state='readonly')
         self.extract_flat.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1485,8 +1481,8 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='External downloader:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.external_downloader = ttk.Combobox(scrollable_frame, width=20,
-                                                 values=['', 'aria2c', 'avconv', 'axel', 'curl', 'ffmpeg', 'httpie', 'wget'],
-                                                 state='readonly')
+                                                values=['', 'aria2c', 'avconv', 'axel', 'curl', 'ffmpeg', 'httpie', 'wget'],
+                                                state='readonly')
         self.external_downloader.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1685,22 +1681,22 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='Merge output format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.merge_output_format = ttk.Combobox(scrollable_frame, width=15,
-                                                 values=['', 'mkv', 'mp4', 'ogg', 'webm', 'flv'],
-                                                 state='readonly')
+                                                values=['', 'mkv', 'mp4', 'ogg', 'webm', 'flv'],
+                                                state='readonly')
         self.merge_output_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Video multistreams:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.video_multistreams = ttk.Combobox(scrollable_frame, width=15,
-                                                values=['', 'yes', 'no'],
-                                                state='readonly')
+                                               values=['', 'yes', 'no'],
+                                               state='readonly')
         self.video_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Audio multistreams:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.audio_multistreams = ttk.Combobox(scrollable_frame, width=15,
-                                                values=['', 'yes', 'no'],
-                                                state='readonly')
+                                               values=['', 'yes', 'no'],
+                                               state='readonly')
         self.audio_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1738,8 +1734,8 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='Subtitle format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.sub_format = ttk.Combobox(scrollable_frame, width=20,
-                                        values=['', 'srt', 'vtt', 'ass', 'lrc'],
-                                        state='readonly')
+                                       values=['', 'srt', 'vtt', 'ass', 'lrc'],
+                                       state='readonly')
         self.sub_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1871,8 +1867,8 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='Audio format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.audio_format = ttk.Combobox(scrollable_frame, width=15,
-                                          values=['', 'best', 'aac', 'm4a', 'mp3', 'opus', 'vorbis', 'wav', 'flac', 'alac'],
-                                          state='readonly')
+                                         values=['', 'best', 'aac', 'm4a', 'mp3', 'opus', 'vorbis', 'wav', 'flac', 'alac'],
+                                         state='readonly')
         self.audio_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1884,15 +1880,15 @@ class YtDlpGUI:
 
         ttk.Label(scrollable_frame, text='Recode video format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.recode_video = ttk.Combobox(scrollable_frame, width=15,
-                                          values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi'],
-                                          state='readonly')
+                                         values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi'],
+                                         state='readonly')
         self.recode_video.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Remux video format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.remux_video = ttk.Combobox(scrollable_frame, width=15,
-                                         values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi', 'mov'],
-                                         state='readonly')
+                                        values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi', 'mov'],
+                                        state='readonly')
         self.remux_video.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -1972,8 +1968,8 @@ class YtDlpGUI:
 
         ttk.Label(frame, text='Convert thumbnails format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.convert_thumbnails = ttk.Combobox(frame, width=15,
-                                                values=['', 'jpg', 'png', 'webp'],
-                                                state='readonly')
+                                               values=['', 'jpg', 'png', 'webp'],
+                                               state='readonly')
         self.convert_thumbnails.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -2233,8 +2229,8 @@ class YtDlpGUI:
 
         ttk.Label(frame, text='Cookies from browser:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.cookies_from_browser = ttk.Combobox(frame, width=20,
-                                                  values=['', 'chrome', 'firefox', 'safari', 'edge', 'opera', 'brave', 'chromium', 'vivaldi'],
-                                                  state='readonly')
+                                                 values=['', 'chrome', 'firefox', 'safari', 'edge', 'opera', 'brave', 'chromium', 'vivaldi'],
+                                                 state='readonly')
         self.cookies_from_browser.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -2255,7 +2251,7 @@ class YtDlpGUI:
         ttk.Label(frame, text='Raw command-line arguments:').grid(row=row, column=0, sticky=tk.NW, pady=5, padx=5)
         self.raw_args = scrolledtext.ScrolledText(frame, width=80, height=10, wrap=tk.WORD)
         self.raw_args.grid(row=row, column=1, sticky=tk.EW, pady=5, padx=5)
-        ttk.Label(frame, text='(One argument per line or space-separated)').grid(row=row+1, column=1, sticky=tk.W, padx=5)
+        ttk.Label(frame, text='(One argument per line or space-separated)').grid(row=row + 1, column=1, sticky=tk.W, padx=5)
         row += 2
 
         ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=row, column=0, columnspan=2, sticky=tk.EW, pady=10)
@@ -2757,7 +2753,7 @@ class YtDlpGUI:
     def generate_command(self):
         """Generate and display the yt-dlp command"""
         args = self.build_command_args()
-        cmd = [sys.executable, '-m', 'yt_dlp'] + args
+        cmd = [sys.executable, '-m', 'yt_dlp', *args]
         cmd_str = ' '.join(f'"{arg}"' if ' ' in arg else arg for arg in cmd)
 
         self.generated_cmd.config(state=tk.NORMAL)
@@ -2781,11 +2777,11 @@ class YtDlpGUI:
 
             # Run yt-dlp process
             self.current_process = subprocess.Popen(
-                [sys.executable, '-m', 'yt_dlp'] + args,
+                [sys.executable, '-m', 'yt_dlp', *args],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
-                bufsize=1
+                bufsize=1,
             )
             process = self.current_process
 
@@ -2831,10 +2827,8 @@ class YtDlpGUI:
         if hasattr(self, 'current_process') and self.current_process:
             self.log_message(self.tr('Stopping download...'))
             self.current_process.terminate()
-            try:
+            with contextlib.suppress(Exception):
                 self.current_process.kill()
-            except Exception:
-                pass
         else:
             self.log_message(self.tr('No download currently running.'))
 
@@ -2856,7 +2850,7 @@ class YtDlpGUI:
         if not url:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
-        
+
         self.console.config(state=tk.NORMAL)
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
@@ -2866,15 +2860,15 @@ class YtDlpGUI:
 
     def _parse_playlist_only(self, url):
         try:
-            self.log_message(self.tr("Checking if URL is a playlist..."))
+            self.log_message(self.tr('Checking if URL is a playlist...'))
             process = subprocess.Popen(
                 [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', url],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
-                bufsize=1
+                bufsize=1,
             )
-            stdout, stderr = process.communicate()
+            stdout, _stderr = process.communicate()
             if process.returncode == 0:
                 info = json.loads(stdout)
                 if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
@@ -2883,15 +2877,15 @@ class YtDlpGUI:
                     self.root.after(0, self._show_playlist_tab, info.get('title', 'Playlist'))
                     return
                 else:
-                    self.log_message(self.tr("Not a playlist or no entries found."))
+                    self.log_message(self.tr('Not a playlist or no entries found.'))
             else:
-                self.log_message(self.tr("Failed to parse playlist."))
+                self.log_message(self.tr('Failed to parse playlist.'))
         except Exception as e:
             self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
         self.status_var.set(self.tr('Ready'))
 
     def _show_playlist_tab(self, temp_title):
-        self.log_message(self.tr("Playlist detected. Please select videos to download."))
+        self.log_message(self.tr('Playlist detected. Please select videos to download.'))
         self.status_var.set(self.tr('Playlist detected'))
         if hasattr(self, 'playlist_tab_frame'):
             self.ensure_tab_built(self.playlist_tab_frame)
@@ -2899,30 +2893,30 @@ class YtDlpGUI:
             # clear inside playlist_videos_frame
             for child in self.playlist_videos_frame.winfo_children():
                 child.destroy()
-            
+
             self.playlist_video_vars = {}
-            
+
             entries = self.playlist_entries_data
             display_data = []
             for i, entry in enumerate(entries):
-                title = entry.get('title') or entry.get('id') or f'Video {i+1}'
+                title = entry.get('title') or entry.get('id') or f'Video {i + 1}'
                 # Check for private video
                 if title == '[Private video]' and self.playlist_exclude_private_var.get():
                     continue
                 display_data.append((i + 1, title))
-            
+
             if self.playlist_reverse_var.get():
                 display_data.reverse()
-            
+
             for original_idx, title in display_data:
                 var = tk.BooleanVar(value=True)
                 self.playlist_video_vars[original_idx] = var
                 ttk.Checkbutton(
                     self.playlist_videos_frame,
-                    text=f"{original_idx}. {title}",
-                    variable=var
+                    text=f'{original_idx}. {title}',
+                    variable=var,
                 ).pack(anchor=tk.W, pady=2)
-                
+
             self.playlist_select_all_var.set(True)
 
     def _start_download_actual(self, args):
@@ -2933,8 +2927,8 @@ class YtDlpGUI:
                 messagebox.showwarning(self.tr('No Videos Selected'), self.tr('Please select at least one video to download.'))
                 self.root.after(0, self._restore_download_button)
                 return
-            pl_items = ",".join(selected_indices)
-            
+            pl_items = ','.join(selected_indices)
+
             try:
                 idx = args.index('--playlist-items')
                 args.pop(idx)
@@ -2990,7 +2984,7 @@ class YtDlpGUI:
         """Load configuration from file"""
         if os.path.exists(self.config_file):
             try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.config_file, encoding='utf-8') as f:
                     self.config = json.load(f)
             except Exception as e:
                 print(f'Error loading config: {e}')
@@ -3011,7 +3005,7 @@ class YtDlpGUI:
             filetypes=[(self.tr('JSON Files'), '*.json'), (self.tr('All Files'), '*.*')])
         if filename:
             try:
-                with open(filename, 'r', encoding='utf-8') as f:
+                with open(filename, encoding='utf-8') as f:
                     self.config = json.load(f)
                 self.apply_config()
                 messagebox.showinfo(self.tr('Success'), self.tr('Configuration loaded successfully!'))
@@ -3076,7 +3070,7 @@ class YtDlpGUI:
 def main():
     """Main entry point for the GUI"""
     root = tk.Tk()
-    app = YtDlpGUI(root)
+    YtDlpGUI(root)
     root.mainloop()
 
 
