@@ -34,8 +34,7 @@ if __name__ == '__main__':
             sys.argv = [original_argv[0], *original_argv[3:]]
             yt_dlp.main()
         else:
-            from yt_dlp_gui_logic import main as run_gui
-            run_gui()
+            yt_dlp.main_gui()
     except ImportError:
         print('ERROR: Unable to import yt_dlp module.')
         print('Please make sure yt-dlp is properly installed.')
