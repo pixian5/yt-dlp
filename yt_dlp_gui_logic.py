@@ -37,7 +37,7 @@ GUI_DEFAULT_STATE = {
     'format': 'bv*[height<=1080]+ba',
     'merge_output_format': 'mp4',
     'output_dir': '/Users/x/Documents/yt',
-    'output_template': '%(playlist_index)s-%(title)s.%(ext)s',
+    'output_template': '%(title)s.%(ext)s',
     'include_private_videos': True,
     'playlist_subdir': False,
     'metadata_lang': 'zh-CN',
@@ -68,6 +68,7 @@ TRANSLATIONS = {
         'Ready': '就绪',
         'Clipboard is empty.': '剪贴板为空。',
         'Pasted link from clipboard.': '已从剪贴板粘贴链接。',
+        'Paste Playlist': '粘贴播放列表',
         'General': '常规',
         'Network': '网络',
         'Geo-restriction': '地区限制',
@@ -244,7 +245,7 @@ TRANSLATIONS = {
         'Use MPEG-TS container for HLS (--hls-use-mpegts)': 'HLS 使用 MPEG-TS 容器（--hls-use-mpegts）',
         'Restrict filenames to ASCII (--restrict-filenames)': '将文件名限制为 ASCII（--restrict-filenames）',
         'Allow Unicode in filenames (--no-restrict-filenames)': '允许文件名使用 Unicode（--no-restrict-filenames）',
-        'Create playlist subfolder for playlist downloads': '播放列表下载时创建同名文件夹',
+        'Create playlist subfolder for playlist downloads': '对播放列表，自动创建同名文件夹',
         'Force Windows-compatible filenames (--windows-filenames)': '强制使用 Windows 兼容文件名（--windows-filenames）',
         'Do not overwrite files (--no-overwrites)': '不覆盖文件（--no-overwrites）',
         'Force overwrite files (--force-overwrites)': '强制覆盖文件（--force-overwrites）',
@@ -924,7 +925,7 @@ class YtDlpGUI:
         # Update scrollregion once after a slight delay if switching into it, 
         # but avoid heavy update_idletasks on every switch.
         if hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame:
-            self.root.after(100, lambda: self.playlist_canvas.configure(scrollregion=self.playlist_canvas.bbox('all')))
+            pass # Treeview handles sizing automatically
 
     def register_stateful_controls(self, attribute_names):
         """Track GUI-only controls so they can be serialized independently."""
@@ -980,6 +981,16 @@ class YtDlpGUI:
         self.save_config(silent=True)
         self.root.destroy()
 
+    def on_url_changed(self, *args):
+        """Reset playlist status when URL is manually changed by user."""
+        current_url = self.url_var.get().strip()
+        if getattr(self, 'playlist_parsed_url', None) and current_url != self.playlist_parsed_url:
+            self.log_message("[DEBUG] URL changed - resetting parsed playlist data")
+            self.playlist_parsed_url = None
+            if hasattr(self, 'playlist_tree'):
+                self.playlist_tree.delete(*self.playlist_tree.get_children())
+            self.status_var.set(self.tr('Ready'))
+
     def create_widgets(self):
         """Create all GUI widgets"""
         before_names = set(self.__dict__)
@@ -1002,14 +1013,23 @@ class YtDlpGUI:
         # URL input
         self.paste_url_btn = ttk.Button(top_frame, text='Paste Link:', command=self.paste_url_from_clipboard)
         self.paste_url_btn.grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.url_entry = ttk.Entry(top_frame, width=80)
+        
+        self.url_var = tk.StringVar()
+        self.url_var.trace_add('write', self.on_url_changed)
+        self.url_entry = ttk.Entry(top_frame, width=80, textvariable=self.url_var)
         self.url_entry.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=5)
         top_frame.columnconfigure(1, weight=1)
 
         # Batch file option
-        ttk.Label(top_frame, text='Or Batch File:').grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.paste_playlist_btn = ttk.Button(top_frame, text='Paste Playlist', command=self.paste_playlist_from_clipboard)
+        self.paste_playlist_btn.grid(row=1, column=0, sticky=tk.W, pady=5)
+        
         batch_frame = ttk.Frame(top_frame)
         batch_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
+        
+        self.playlist_btn = ttk.Button(batch_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
+        self.playlist_btn.pack(side=tk.LEFT, padx=(0, 5))
+        
         self.batch_file_entry = ttk.Entry(batch_frame)
         self.batch_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         ttk.Button(batch_frame, text='Browse...', command=self.browse_batch_file).pack(side=tk.LEFT, padx=(5, 0))
@@ -1019,8 +1039,6 @@ class YtDlpGUI:
         button_frame.grid(row=2, column=0, columnspan=2, pady=10)
         self.download_btn = ttk.Button(button_frame, text='Download', command=self.on_download_btn_click, width=15)
         self.download_btn.pack(side=tk.LEFT, padx=5)
-        self.playlist_btn = ttk.Button(button_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
-        self.playlist_btn.pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Extract Info', command=self.extract_info, width=15).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text='Load Config', command=self.load_config_dialog, width=15).pack(side=tk.LEFT, padx=5)
@@ -1169,11 +1187,11 @@ class YtDlpGUI:
         # Only scroll if the playlist tab is active
         if self.notebook.select() == str(self.playlist_tab_frame):
             if event.num == 4: # Linux scroll up
-                self.playlist_canvas.yview_scroll(-1, "units")
+                self.playlist_tree.yview_scroll(-1, "units")
             elif event.num == 5: # Linux scroll down
-                self.playlist_canvas.yview_scroll(1, "units")
+                self.playlist_tree.yview_scroll(1, "units")
             else: # Windows/Mac
-                self.playlist_canvas.yview_scroll(int(-1*(event.delta)), "units")
+                self.playlist_tree.yview_scroll(int(-1*(event.delta)), "units")
 
     def _on_playlist_option_changed(self):
         if hasattr(self, 'playlist_entries_data') and self.playlist_entries_data:
@@ -2384,6 +2402,21 @@ class YtDlpGUI:
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
 
+    def paste_playlist_from_clipboard(self):
+        try:
+            clipboard_text = self.root.clipboard_get().strip()
+        except tk.TclError:
+            clipboard_text = ''
+
+        if not clipboard_text:
+            self.log_message(self.tr('Clipboard is empty.'))
+            return
+
+        self.batch_file_entry.delete(0, tk.END)
+        self.batch_file_entry.insert(0, clipboard_text)
+        self.batch_file_entry.focus_set()
+        self.log_message(self.tr('Pasted playlist from clipboard.'))
+
     def browse_config_file(self):
         filename = filedialog.askopenfilename(
             title=self.tr('Select Config File'),
@@ -3097,11 +3130,11 @@ class YtDlpGUI:
         self.log_message(f'[DEBUG] output_dir={output_dir!r}')
         
         playlist_parsed_url = getattr(self, 'playlist_parsed_url', None)
-        has_vars = hasattr(self, 'playlist_video_vars')
-        self.log_message(f'[DEBUG] playlist_parsed_url={playlist_parsed_url!r}, url_match={playlist_parsed_url == url}, has_vars={has_vars}')
+        self.log_message(f'[DEBUG] URL match check: Input="{url}", Parsed="{playlist_parsed_url}"')
         
         tasks = []
-        if hasattr(self, 'playlist_tree'):
+        # ONLY use playlist tasks if the URL matches what we parsed!
+        if hasattr(self, 'playlist_tree') and playlist_parsed_url and url == playlist_parsed_url:
             items = self.playlist_tree.get_children()
             # SIMPLICITY: Just follow the tree from TOP TO BOTTOM as shown in GUI.
             vis_to_orig_map = getattr(self, 'vis_to_orig', {})
@@ -3129,7 +3162,16 @@ class YtDlpGUI:
                     # Remove unsave characters
                     filename_tpl = "".join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
                     
-                    out_path = os.path.join(output_dir, filename_tpl) if output_dir else filename_tpl
+                    # Handle playlist subfolder
+                    final_output_dir = output_dir
+                    if self.playlist_subdir.get() and getattr(self, 'current_playlist_metadata_title', None):
+                        folder_name = "".join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
+                        if folder_name:
+                            final_output_dir = os.path.join(output_dir, folder_name)
+                            if not os.path.exists(final_output_dir):
+                                os.makedirs(final_output_dir, exist_ok=True)
+
+                    out_path = os.path.join(final_output_dir, filename_tpl) if final_output_dir else filename_tpl
                     task_args.extend(['--playlist-items', str(original_idx)])
                     task_args.extend(['-o', out_path])
                     tasks.append((visual_idx, task_args))
@@ -3212,7 +3254,8 @@ class YtDlpGUI:
                 if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
                     self.playlist_parsed_url = url
                     self.playlist_entries_data = info['entries']
-                    self.root.after(0, self._show_playlist_tab, info.get('title', 'Playlist'))
+                    self.current_playlist_metadata_title = info.get('title', 'Playlist')
+                    self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
                 else:
                     self.log_message(self.tr("Not a playlist or no entries found."))
