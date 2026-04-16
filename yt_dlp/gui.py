@@ -2382,8 +2382,9 @@ class YtDlpGUI:
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
         # Register tabs for lazy creation
-        general_frame =         self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
-        self.add_lazy_tab('general', 'General', self.create_general_tab)
+        batch_frame = self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
+
+        # Insert Playlist tab so it appears before the General tab
         self.playlist_tab_frame = self.create_playlist_tab()
         if self.playlist_tab_frame is None:
             self.playlist_tab_frame = ttk.Frame(self.notebook, padding='10')
@@ -2391,7 +2392,9 @@ class YtDlpGUI:
         self.notebook.add(self.playlist_tab_frame, text='Playlist')
         self._built_tabs.add(self.playlist_tab_frame)
         self._notebook_tab_texts[self.playlist_tab_frame] = 'Playlist'
-        
+
+        # General tab comes after Playlist now
+        self.add_lazy_tab('general', 'General', self.create_general_tab)
         self.add_lazy_tab('network', 'Network', self.create_network_tab)
         # ... rest of lazy tabs
         self.add_lazy_tab('geo', 'Geo-restriction', self.create_geo_restriction_tab)
@@ -2409,8 +2412,8 @@ class YtDlpGUI:
         self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
         self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
         
-        self.ensure_tab_built(general_frame)
-        self._active_tab_frame = general_frame
+        self.ensure_tab_built(batch_frame)
+        self._active_tab_frame = batch_frame
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
