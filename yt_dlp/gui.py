@@ -2351,7 +2351,8 @@ class YtDlpGUI:
 
         # Quick action buttons
         button_frame = ttk.Frame(top_frame)
-        button_frame.grid(row=2, column=0, columnspan=2, pady=10)
+        # Move up since the intermediate batch row was removed
+        button_frame.grid(row=1, column=0, columnspan=2, pady=10)
         self.download_btn = ttk.Button(button_frame, text='Download', command=self.on_download_btn_click, width=15)
         self.download_btn.pack(side=tk.LEFT, padx=5)
         self.register_translatable_widget(self.download_btn, 'Download')
