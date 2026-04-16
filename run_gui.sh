@@ -2,9 +2,8 @@
 set -euo pipefail
 # Launcher script to start yt-dlp GUI using the project's virtualenv Python.
 # Behavior:
-# 1) If a previous GUI was started via this script, stop it (uses run_gui.pid). Falls back to pgrep.
-# 2) Run a quick Python compilation (compileall) to catch syntax errors.
-# 3) Start the GUI and write PID to run_gui.pid; logs appended to run_gui.log.
+# 1) Stops previous GUI process (uses run_gui.pid). Falls back to pgrep.
+# 2) Starts the GUI and writes PID to run_gui.pid; logs appended to run_gui.log.
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIDFILE="$DIR/run_gui.pid"
@@ -61,13 +60,7 @@ if command -v pgrep >/dev/null 2>&1; then
   done
 fi
 
-# Recompile python files to catch syntax errors before launching
-echo "[run_gui] Compiling Python files (compileall) ..." | tee -a "$LOGFILE"
-if ! "$PY" -m compileall -q "$DIR" 2>>"$LOGFILE"; then
-  echo "[run_gui] Compilation failed; aborting. See $LOGFILE" | tee -a "$LOGFILE"
-  exit 1
-fi
-
+# Start GUI
 echo "[run_gui] Starting yt-dlp GUI with: $PY" | tee -a "$LOGFILE"
 # write this process PID so subsequent runs can stop it
 echo "$$" > "$PIDFILE"
