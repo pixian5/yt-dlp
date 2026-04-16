@@ -132,3 +132,7 @@ yt-dlp-plugins
 
 # Packages
 yt_dlp_ejs/
+
+# Local run_gui artifacts
+run_gui.log
+run_gui.pid
