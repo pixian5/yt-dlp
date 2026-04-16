@@ -2466,21 +2466,18 @@ class YtDlpGUI:
         lbl_list.pack(side=tk.LEFT)
         self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
         
-        btn_paste = ttk.Button(header_row, text=self.tr('Bulk Paste'), command=self.paste_bulk_urls_smart)
-        btn_paste.pack(side=tk.LEFT, padx=(15, 0))
-        self.register_translatable_widget(btn_paste, 'Bulk Paste')
-        
-        btn_batch = ttk.Button(header_row, text=self.tr('Parse Batch'), command=self.parse_batch)
-        btn_batch.pack(side=tk.LEFT, padx=5)
-        self.register_translatable_widget(btn_batch, 'Parse Batch')
-        
+        # Control buttons will be placed below the batch URLs text area (added after the text widget)
+
+        # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
-        btn_clear.pack(side=tk.LEFT)
+        btn_clear.pack(side=tk.RIGHT)
         self.register_translatable_widget(btn_clear, 'Clear Pool')
         
         self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
         self.batch_urls_text.pack(fill=tk.X, expand=True)
         self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
+
+        # NOTE: Controls row for paste/parse will be placed after the dynamic rows
 
         dyn_container = ttk.Frame(frame)
         dyn_container.pack(fill=tk.BOTH, expand=True)
@@ -2496,6 +2493,8 @@ class YtDlpGUI:
         self.bulk_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Controls row removed: Bulk Paste and Parse Batch buttons were intentionally deleted
+        # per user request. Keep dynamic rows and clear button intact.
         self.bulk_rows = []
         self.add_bulk_row()
 
@@ -2637,23 +2636,13 @@ class YtDlpGUI:
         btn_sel_inv.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_sel_inv, 'Invert Select')
 
+        # The following options were previously exposed as checkboxes:
+        # - Reverse order
+        # - Exclude private videos
+        # Per user request these controls have been removed from the UI; keep internal
+        # variables with their default values so existing logic continues to work.
         self.playlist_reverse_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            top_ctrl,
-            text="Reverse order",
-            variable=self.playlist_reverse_var,
-            command=self._on_playlist_option_changed
-        ).pack(side=tk.LEFT, padx=(20, 0))
-        self.register_translatable_widget(top_ctrl.winfo_children()[1], 'Reverse order')
-
         self.playlist_exclude_private_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(
-            top_ctrl,
-            text="Exclude private videos",
-            variable=self.playlist_exclude_private_var,
-            command=self._on_playlist_option_changed
-        ).pack(side=tk.LEFT, padx=(20, 0))
-        self.register_translatable_widget(top_ctrl.winfo_children()[2], 'Exclude private videos')
         
         # TREEVIEW for heavy listing
         tree_frame = ttk.Frame(frame)
