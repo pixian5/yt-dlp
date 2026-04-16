@@ -49,6 +49,7 @@ GUI_DEFAULT_STATE = {
 
 TRANSLATIONS = {
     'zh': {
+        "Extract audio (--extract-audio)": "仅提取音频",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp 图形界面 - 视频下载配置',
         'Language:': '语言：',
         'Paste Link:': '粘贴链接：',
@@ -312,6 +313,14 @@ TRANSLATIONS = {
         'Split HLS segments on discontinuity (--hls-split-discontinuity)': '在不连续处拆分 HLS 分片（--hls-split-discontinuity）',
     },
     'ru': {
+        "Write thumbnail image (--write-thumbnail)": "Write thumbnail image (--write-thumbnail)",
+        "List available thumbnails (--list-thumbnails)": "List available thumbnails (--list-thumbnails)",
+        "Username:": "Username:",
+        "Password:": "Password:",
+        "Extract audio (--extract-audio)": "Extract audio (--extract-audio)",
+        "Audio format:": "Audio format:",
+        "Quiet mode (-q, --quiet)": "Quiet mode (-q, --quiet)",
+        "Verbose output (-v, --verbose)": "Verbose output (-v, --verbose)",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Настройка загрузки видео',
         'Language:': 'Язык:',
         'Video URL(s):': 'URL видео:',
@@ -376,6 +385,14 @@ TRANSLATIONS = {
         'Executable Files': 'Исполняемые файлы',
     },
     'ja': {
+        "Write thumbnail image (--write-thumbnail)": "サムネイル画像を保存",
+        "List available thumbnails (--list-thumbnails)": "利用可能なサムネイルを表示",
+        "Username:": "ユーザー名:",
+        "Password:": "パスワード:",
+        "Extract audio (--extract-audio)": "音声を抽出",
+        "Audio format:": "音声形式:",
+        "Quiet mode (-q, --quiet)": "クワイエットモード",
+        "Verbose output (-v, --verbose)": "詳細を出力",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - 動画ダウンロード設定',
         'Language:': '言語:',
         'Video URL(s):': '動画 URL:',
@@ -428,6 +445,14 @@ TRANSLATIONS = {
         'Executable Files': '実行ファイル',
     },
     'ko': {
+        "Write thumbnail image (--write-thumbnail)": "썸네일 이미지 저장",
+        "List available thumbnails (--list-thumbnails)": "사용 가능한 썸네일 목록",
+        "Username:": "사용자 이름:",
+        "Password:": "비밀번호:",
+        "Extract audio (--extract-audio)": "오디오만 추출",
+        "Audio format:": "오디오 출력 형식:",
+        "Quiet mode (-q, --quiet)": "정적 모드",
+        "Verbose output (-v, --verbose)": "상세 출력",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - 비디오 다운로드 설정',
         'Language:': '언어:',
         'Video URL(s):': '비디오 URL:',
@@ -480,6 +505,14 @@ TRANSLATIONS = {
         'Executable Files': '실행 파일',
     },
     'es': {
+        "Write thumbnail image (--write-thumbnail)": "Write thumbnail image (--write-thumbnail)",
+        "List available thumbnails (--list-thumbnails)": "List available thumbnails (--list-thumbnails)",
+        "Username:": "Username:",
+        "Password:": "Password:",
+        "Extract audio (--extract-audio)": "Extract audio (--extract-audio)",
+        "Audio format:": "Audio format:",
+        "Quiet mode (-q, --quiet)": "Quiet mode (-q, --quiet)",
+        "Verbose output (-v, --verbose)": "Verbose output (-v, --verbose)",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Configuración de descarga de video',
         'Language:': 'Idioma:',
         'Video URL(s):': 'URL(s) de video:',
@@ -532,6 +565,14 @@ TRANSLATIONS = {
         'Executable Files': 'Archivos ejecutables',
     },
     'fr': {
+        "Write thumbnail image (--write-thumbnail)": "Write thumbnail image (--write-thumbnail)",
+        "List available thumbnails (--list-thumbnails)": "List available thumbnails (--list-thumbnails)",
+        "Username:": "Username:",
+        "Password:": "Password:",
+        "Extract audio (--extract-audio)": "Extract audio (--extract-audio)",
+        "Audio format:": "Audio format:",
+        "Quiet mode (-q, --quiet)": "Quiet mode (-q, --quiet)",
+        "Verbose output (-v, --verbose)": "Verbose output (-v, --verbose)",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Configuration du telechargement video',
         'Language:': 'Langue :',
         'Video URL(s):': 'URL(s) video :',
@@ -584,6 +625,14 @@ TRANSLATIONS = {
         'Executable Files': 'Fichiers executables',
     },
     'de': {
+        "Write thumbnail image (--write-thumbnail)": "Write thumbnail image (--write-thumbnail)",
+        "List available thumbnails (--list-thumbnails)": "List available thumbnails (--list-thumbnails)",
+        "Username:": "Username:",
+        "Password:": "Password:",
+        "Extract audio (--extract-audio)": "Extract audio (--extract-audio)",
+        "Audio format:": "Audio format:",
+        "Quiet mode (-q, --quiet)": "Quiet mode (-q, --quiet)",
+        "Verbose output (-v, --verbose)": "Verbose output (-v, --verbose)",
         'yt-dlp GUI - Video Downloader Configuration': 'yt-dlp GUI - Video-Download-Konfiguration',
         'Language:': 'Sprache:',
         'Video URL(s):': 'Video-URL(s):',
@@ -697,25 +746,27 @@ class YtDlpGUI:
         return f'{self.tr(prefix)}{value}'
 
     def detect_system_language(self):
-        """Detect the preferred system language and map it to a supported locale."""
-        candidates = []
+        """Proactive system language detection for macOS/Unix"""
         try:
-            lang, _ = locale.getlocale()
-            if lang:
-                candidates.append(lang)
+            import subprocess
+            res = subprocess.check_output(['defaults', 'read', '-g', 'AppleLanguages'], 
+                                        stderr=subprocess.DEVNULL, universal_newlines=True)
+            if res:
+                lang_line = res.split('\n')[1].strip(' "(),')
+                prefix = lang_line.split('-')[0].lower()
+                if prefix in LANGUAGE_OPTIONS:
+                    return prefix
         except Exception:
             pass
 
-        for env_name in ('LC_ALL', 'LC_MESSAGES', 'LANG'):
-            value = os.environ.get(env_name)
-            if value:
-                candidates.append(value)
-
-        for candidate in candidates:
-            normalized = candidate.replace('-', '_').lower()
-            prefix = normalized.split('_', 1)[0]
-            if prefix in LANGUAGE_OPTIONS:
-                return prefix
+        try:
+            lang, _ = locale.getdefaultlocale()
+            if lang:
+                prefix = lang.split('_')[0].lower()
+                if prefix in LANGUAGE_OPTIONS:
+                    return prefix
+        except Exception:
+            pass
         return 'en'
 
     def initialize_language(self):
@@ -770,7 +821,16 @@ class YtDlpGUI:
         if text is not None:
             if widget not in self._translatable_widgets:
                 self._translatable_widgets[widget] = text
-            widget.config(text=self.tr(self._translatable_widgets[widget]))
+            try:
+                widget.config(text=self.tr(self._translatable_widgets[widget]))
+            except Exception:
+                pass
+
+        if isinstance(widget, tk.Canvas):
+            for item in widget.find_all():
+                if widget.type(item) == 'window':
+                    sub_widget = widget.nametowidget(widget.itemcget(item, 'window'))
+                    self.localize_widget_tree(sub_widget)
 
         for child in widget.winfo_children():
             self.localize_widget_tree(child)
