@@ -73,6 +73,14 @@ TRANSLATIONS = {
         'Clipboard is empty.': '剪贴板为空。',
         'Pasted link from clipboard.': '已从剪贴板粘贴链接。',
         'Paste Playlist': '粘贴播放列表',
+        'Batch Download': '批量下载',
+        'Playlist': '播放列表',
+        'Batch file path:': '批量文件路径：',
+        'Batch URLs (one per line):': '批量 URL (每行一个):',
+        'Parse': '解析',
+        'Bulk Paste': '批量粘贴',
+        'Parse Batch': '解析批量',
+        'Clear Pool': '清空列表',
         'General': '常规',
         'Network': '网络',
         'Geo-restriction': '地区限制',
@@ -315,54 +323,49 @@ TRANSLATIONS = {
     'ru': {
         "Extract audio (--extract-audio)": "仅提取音频",
         "yt-dlp GUI - Video Downloader Configuration": "yt-dlp 图形界面 - 视频下载配置",
-        "Language:": "语言：",
-        "Paste Link:": "粘贴链接：",
-        "Stop": "停止",
-        "Download stopped. Would you like to delete partially downloaded files?": "下载已停止。是否要删除未下载完的临时文件？",
-        "Video URL(s):": "视频 URL：",
-        "Or Batch File:": "或批量文件：",
-        "Browse...": "浏览...",
-        "Download": "下载",
-        "List Formats": "列出格式",
-        "Extract Info": "提取信息",
-        "Load Config": "加载配置",
-        "Save Config": "保存配置",
-        "Parse Playlist": "解析播放列表",
-        "Exclude private videos": "隐藏私有视频",
-        "Reverse order": "播放列表倒序",
-        "Output Console": "输出控制台",
-        "Ready": "就绪",
-        "Clipboard is empty.": "剪贴板为空。",
-        "Pasted link from clipboard.": "已从剪贴板粘贴链接。",
-        "Paste Playlist": "粘贴播放列表",
-        "General": "Общие",
-        "Network": "Сеть",
-        "Geo-restriction": "地区限制",
-        "Video Selection": "视频筛选",
-        "Filesystem": "文件系统",
-        "Video Format": "视频格式",
-        "Subtitles": "字幕",
-        "Authentication": "Аутентификация",
-        "Post-processing": "后处理",
-        "Thumbnail": "Миниатюры",
-        "Verbosity/Simulation": "输出/模拟",
-        "Workarounds": "兼容方案",
-        "SponsorBlock": "Блокировка рекламы",
-        "Extractor": "提取器",
-        "Advanced": "高级",
-        "Configuration file:": "配置文件：",
-        "Default search prefix:": "默认搜索前缀：",
-        "Flat playlist extraction:": "平铺播放列表提取：",
-        "Age limit (years):": "年龄限制（岁）：",
-        "Download archive file:": "下载归档文件：",
-        "Max downloads:": "最大下载数：",
-        "Proxy URL:": "代理 URL：",
-        "Socket timeout (seconds):": "套接字超时（秒）：",
-        "Source address (bind to):": "源地址（绑定到）：",
-        "Sleep interval (seconds):": "休眠间隔（秒）：",
-        "Max sleep interval (seconds):": "最大休眠间隔（秒）：",
-        "Sleep interval for requests (seconds):": "请求休眠间隔（秒）：",
-        "Sleep interval for subtitles (seconds):": "字幕休眠间隔（秒）：",
+        'Language:': 'Язык:',
+        'Paste Link:': 'Вставить ссылку:',
+        'Stop': 'Стоп',
+        'Download stopped. Would you like to delete partially downloaded files?': 'Загрузка остановлена. Хотите удалить частично загруженные файлы?',
+        'Video URL(s):': 'URL видео:',
+        'Or Batch File:': 'Или пакетный файл:',
+        'Browse...': 'Обзор...',
+        'Download': 'Скачать',
+        'List Formats': 'Список форматов',
+        'Extract Info': 'Извлечь инфо',
+        'Load Config': 'Загрузить конфиг',
+        'Save Config': 'Сохранить конфиг',
+        'Parse Playlist': 'Разобрать плейлист',
+        'Exclude private videos': 'Исключить приватные',
+        'Reverse order': 'Обратный порядок',
+        'Output Console': 'Консоль вывода',
+        'Ready': 'Готов',
+        'Clipboard is empty.': 'Буфер обмена пуст.',
+        'Pasted link from clipboard.': 'Ссылка вставлена из буфера.',
+        'Paste Playlist': 'Вставить плейлист',
+        'Batch Download': 'Пакетная загрузка',
+        'Playlist': 'Плейлист',
+        'Batch file path:': 'Путь к файлу:',
+        'Batch URLs (one per line):': 'Ссылки (по одной на строку):',
+        'Parse': 'Разобрать',
+        'Bulk Paste': 'Массовая вставка',
+        'Parse Batch': 'Разобрать пакет',
+        'Clear Pool': 'Очистить список',
+        'General': 'Общие',
+        'Network': 'Сеть',
+        'Geo-restriction': 'Гео-ограничения',
+        'Video Selection': 'Выбор видео',
+        'Filesystem': 'Файловая система',
+        'Video Format': 'Формат видео',
+        'Subtitles': 'Субтитры',
+        'Authentication': 'Аутентификация',
+        'Post-processing': 'Пост-обработка',
+        'Thumbnail': 'Миниатюры',
+        'Verbosity/Simulation': 'Подробность/Симуляция',
+        'Workarounds': 'Обходные пути',
+        'SponsorBlock': 'SponsorBlock',
+        'Extractor': 'Экстрактор',
+        'Advanced': 'Дополнительно',
         "):": "限速（例如“50K”或“4.2M”）：",
         "Throttled rate (minimum rate):": "节流速率（最小速率）：",
         "Retries:": "重试次数：",
@@ -575,52 +578,49 @@ TRANSLATIONS = {
         "yt-dlp GUI - Video Downloader Configuration": "yt-dlp 图形界面 - 视频下载配置",
         "Language:": "语言：",
         "Paste Link:": "粘贴链接：",
-        "Stop": "停止",
-        "Download stopped. Would you like to delete partially downloaded files?": "下载已停止。是否要删除未下载完的临时文件？",
-        "Video URL(s):": "视频 URL：",
-        "Or Batch File:": "或批量文件：",
-        "Browse...": "浏览...",
-        "Download": "下载",
-        "List Formats": "列出格式",
-        "Extract Info": "提取信息",
-        "Load Config": "加载配置",
-        "Save Config": "保存配置",
-        "Parse Playlist": "解析播放列表",
-        "Exclude private videos": "隐藏私有视频",
-        "Reverse order": "播放列表倒序",
-        "Output Console": "输出控制台",
-        "Ready": "就绪",
-        "Clipboard is empty.": "剪贴板为空。",
-        "Pasted link from clipboard.": "已从剪贴板粘贴链接。",
-        "Paste Playlist": "粘贴播放列表",
-        "General": "全般設定",
-        "Network": "ネットワーク",
-        "Geo-restriction": "地区限制",
-        "Video Selection": "视频筛选",
-        "Filesystem": "文件系统",
-        "Video Format": "视频格式",
-        "Subtitles": "字幕",
-        "Authentication": "認証",
-        "Post-processing": "后处理",
-        "Thumbnail": "サムネイル",
-        "Verbosity/Simulation": "输出/模拟",
-        "Workarounds": "兼容方案",
-        "SponsorBlock": "広告ブロック",
-        "Extractor": "提取器",
-        "Advanced": "高级",
-        "Configuration file:": "配置文件：",
-        "Default search prefix:": "默认搜索前缀：",
-        "Flat playlist extraction:": "平铺播放列表提取：",
-        "Age limit (years):": "年龄限制（岁）：",
-        "Download archive file:": "下载归档文件：",
-        "Max downloads:": "最大下载数：",
-        "Proxy URL:": "代理 URL：",
-        "Socket timeout (seconds):": "套接字超时（秒）：",
-        "Source address (bind to):": "源地址（绑定到）：",
-        "Sleep interval (seconds):": "休眠间隔（秒）：",
-        "Max sleep interval (seconds):": "最大休眠间隔（秒）：",
-        "Sleep interval for requests (seconds):": "请求休眠间隔（秒）：",
-        "Sleep interval for subtitles (seconds):": "字幕休眠间隔（秒）：",
+        'Language:': '言語:',
+        'Paste Link:': 'リンクを貼り付け:',
+        'Stop': '停止',
+        'Download stopped. Would you like to delete partially downloaded files?': 'ダウンロードが停止しました。未完成のファイルを削除しますか？',
+        'Video URL(s):': 'ビデオURL:',
+        'Or Batch File:': 'または一括ファイル:',
+        'Browse...': '参照...',
+        'Download': 'ダウンロード',
+        'List Formats': '形式一覧',
+        'Extract Info': '情報を抽出',
+        'Load Config': '設定を読み込む',
+        'Save Config': '設定を保存',
+        'Parse Playlist': 'プレイリスト解析',
+        'Exclude private videos': '限定公開ビデオを除外',
+        'Reverse order': '逆順',
+        'Output Console': '出力コンソール',
+        'Ready': '準備完了',
+        'Clipboard is empty.': 'クリップボードは空です。',
+        'Pasted link from clipboard.': 'クリップボードからリンクを貼り付けました。',
+        'Paste Playlist': 'プレイリストを貼り付け',
+        'Batch Download': '一括ダウンロード',
+        'Playlist': 'プレイリスト',
+        'Batch file path:': '一括ファイルパス:',
+        'Batch URLs (one per line):': '一括URL (1行に1つ):',
+        'Parse': '解析',
+        'Bulk Paste': '一括貼り付け',
+        'Parse Batch': '一括解析',
+        'Clear Pool': 'リストをクリア',
+        'General': '全般',
+        'Network': 'ネットワーク',
+        'Geo-restriction': '地域制限',
+        'Video Selection': 'ビデオ選択',
+        'Filesystem': 'ファイルシステム',
+        'Video Format': 'ビデオ形式',
+        'Subtitles': '字幕',
+        'Authentication': '認証',
+        'Post-processing': '後処理',
+        'Thumbnail': 'サムネイル',
+        'Verbosity/Simulation': '詳細/シミュレーション',
+        'Workarounds': '回避策',
+        'SponsorBlock': 'SponsorBlock',
+        'Extractor': '抽出器',
+        'Advanced': '高度な設定',
         "):": "限速（例如“50K”或“4.2M”）：",
         "Throttled rate (minimum rate):": "节流速率（最小速率）：",
         "Retries:": "重试次数：",
@@ -851,6 +851,14 @@ TRANSLATIONS = {
         "Clipboard is empty.": "클립보드가 비어 있습니다.",
         "Pasted link from clipboard.": "클립보드에서 링크를 붙여넣었습니다.",
         "Paste Playlist": "재생목록 붙여넣기",
+        "Batch Download": "배치 다운로드",
+        "Playlist": "재생목록",
+        "Batch file path:": "배치 파일 경로:",
+        "Batch URLs (one per line):": "배치 URL (한 줄에 하나씩):",
+        "Parse": "분석",
+        "Bulk Paste": "대량 붙여넣기",
+        "Parse Batch": "부치 분석",
+        "Clear Pool": "목록 초기화",
         "General": "일반 설정",
         "Network": "네트워크",
         "Geo-restriction": "地区限制",
@@ -1603,56 +1611,49 @@ TRANSLATIONS = {
         "Split HLS segments on discontinuity (--hls-split-discontinuity)": "在不连续处拆分 HLS 分片（--hls-split-discontinuity）",
     },
     'de': {
-        "Extract audio (--extract-audio)": "仅提取音频",
-        "yt-dlp GUI - Video Downloader Configuration": "yt-dlp 图形界面 - 视频下载配置",
-        "Language:": "语言：",
-        "Paste Link:": "粘贴链接：",
-        "Stop": "停止",
-        "Download stopped. Would you like to delete partially downloaded files?": "下载已停止。是否要删除未下载完的临时文件？",
-        "Video URL(s):": "视频 URL：",
-        "Or Batch File:": "或批量文件：",
-        "Browse...": "浏览...",
-        "Download": "下载",
-        "List Formats": "列出格式",
-        "Extract Info": "提取信息",
-        "Load Config": "加载配置",
-        "Save Config": "保存配置",
-        "Parse Playlist": "解析播放列表",
-        "Exclude private videos": "隐藏私有视频",
-        "Reverse order": "播放列表倒序",
-        "Output Console": "输出控制台",
-        "Ready": "就绪",
-        "Clipboard is empty.": "剪贴板为空。",
-        "Pasted link from clipboard.": "已从剪贴板粘贴链接。",
-        "Paste Playlist": "粘贴播放列表",
-        "General": "常规",
-        "Network": "网络",
-        "Geo-restriction": "地区限制",
-        "Video Selection": "视频筛选",
-        "Filesystem": "文件系统",
-        "Video Format": "视频格式",
-        "Subtitles": "字幕",
-        "Authentication": "认证",
-        "Post-processing": "后处理",
-        "Thumbnail": "缩略图",
-        "Verbosity/Simulation": "输出/模拟",
-        "Workarounds": "兼容方案",
-        "SponsorBlock": "SponsorBlock",
-        "Extractor": "提取器",
-        "Advanced": "高级",
-        "Configuration file:": "配置文件：",
-        "Default search prefix:": "默认搜索前缀：",
-        "Flat playlist extraction:": "平铺播放列表提取：",
-        "Age limit (years):": "年龄限制（岁）：",
-        "Download archive file:": "下载归档文件：",
-        "Max downloads:": "最大下载数：",
-        "Proxy URL:": "代理 URL：",
-        "Socket timeout (seconds):": "套接字超时（秒）：",
-        "Source address (bind to):": "源地址（绑定到）：",
-        "Sleep interval (seconds):": "休眠间隔（秒）：",
-        "Max sleep interval (seconds):": "最大休眠间隔（秒）：",
-        "Sleep interval for requests (seconds):": "请求休眠间隔（秒）：",
-        "Sleep interval for subtitles (seconds):": "字幕休眠间隔（秒）：",
+        'Language:': 'Sprache:',
+        'Paste Link:': 'Link einfügen:',
+        'Stop': 'Stopp',
+        'Download stopped. Would you like to delete partially downloaded files?': 'Download gestoppt. Teilweise heruntergeladene Dateien löschen?',
+        'Video URL(s):': 'Video-URLs:',
+        'Or Batch File:': 'Oder Batch-Datei:',
+        'Browse...': 'Durchsuchen...',
+        'Download': 'Herunterladen',
+        'List Formats': 'Formate auflisten',
+        'Extract Info': 'Info extrahieren',
+        'Load Config': 'Konfig laden',
+        'Save Config': 'Konfig speichern',
+        'Parse Playlist': 'Wiedergabeliste parsen',
+        'Exclude private videos': 'Private Videos ausschließen',
+        'Reverse order': 'Umgekehrte Reihenfolge',
+        'Output Console': 'Ausgabekonsole',
+        'Ready': 'Bereit',
+        'Clipboard is empty.': 'Zwischenablage ist leer.',
+        'Pasted link from clipboard.': 'Link aus Zwischenablage eingefügt.',
+        'Paste Playlist': 'Playlist einfügen',
+        'Batch Download': 'Stapel-Download',
+        'Playlist': 'Wiedergabeliste',
+        'Batch file path:': 'Batch-Dateipfad:',
+        'Batch URLs (one per line):': 'Batch-URLs (eine pro Zeile):',
+        'Parse': 'Parsen',
+        'Bulk Paste': 'Massen-Einfügen',
+        'Parse Batch': 'Stapel parsen',
+        'Clear Pool': 'Liste leeren',
+        'General': 'Allgemein',
+        'Network': 'Netzwerk',
+        'Geo-restriction': 'Geo-Einschränkung',
+        'Video Selection': 'Video-Auswahl',
+        'Filesystem': 'Dateisystem',
+        'Video Format': 'Video-Format',
+        'Subtitles': 'Untertitel',
+        'Authentication': 'Authentifizierung',
+        'Post-processing': 'Nachbearbeitung',
+        'Thumbnail': 'Vorschaubild',
+        'Verbosity/Simulation': 'Ausführlichkeit/Simulation',
+        'Workarounds': 'Umgehungen',
+        'SponsorBlock': 'SponsorBlock',
+        'Extractor': 'Extraktor',
+        'Advanced': 'Erweitert',
         "):": "限速（例如“50K”或“4.2M”）：",
         "Throttled rate (minimum rate):": "节流速率（最小速率）：",
         "Retries:": "重试次数：",
@@ -1905,30 +1906,42 @@ class YtDlpGUI:
         self._pending_gui_state = {}
         self._active_tab_frame = None
 
+        self.current_language = 'en'  # Default for very early calls
+        
         # Configuration storage
         self.config = {}
         self.config_file = os.path.expanduser('~/.yt-dlp-gui-config.json')
         self.load_config()
-        # Initialize language and resolve to valid locale internally
-        self.initialize_language()
+        # Thread-safe logging initialization
+        import queue
+        self.log_queue = queue.Queue()
+        self._start_log_watcher()
         
         # Variables and state tracking
         self.batch_file_var = tk.StringVar()
         self.reverse_order = tk.BooleanVar(value=False)
         self.exclude_private = tk.BooleanVar(value=True)
-        self.batch_urls_text = None # Will be set in create_batch_download_tab
+        self.batch_urls_text = None
         self.bulk_rows = []
-
-        # Thread-safe logging initialization
-        import queue
-        self.log_queue = queue.Queue()
-        self._start_log_watcher()
+        
+        # Language selection variable with trace
+        self.language_var = tk.StringVar()
+        self.language_var.trace_add('write', self.on_language_changed_trace)
 
         # Create main container
         self.create_widgets()
+        
+        # Initialize language values AFTER widgets are created
+        self.initialize_language()
+        
+        # Ensure the selector matches initial state without triggering trace loop
+        pref = self.config.get('language', 'auto')
+        self.language_var.set(self.get_language_display(pref))
+        
         self.apply_localization()
         self.apply_config()
         self.unify_languages()
+        
         self.root.after(50, self.present_window)
         self.root.protocol('WM_DELETE_WINDOW', self.on_window_close)
 
@@ -1942,13 +1955,11 @@ class YtDlpGUI:
         """Translate UI text with English fallback."""
         if not text:
             return text
-        translations = TRANSLATIONS.get(self.current_language, {})
+        lang = getattr(self, 'current_language', 'en')
+        translations = TRANSLATIONS.get(lang, {})
         result = translations.get(text)
         if result is None:
             # If not found in current language, it returns the key itself
-            if self.current_language != 'en':
-                # self.log_message(f"[LOCALIZE] MISSING KEY in '{self.current_language}': '{text}'")
-                pass
             return text
         return result
 
@@ -2127,40 +2138,53 @@ class YtDlpGUI:
             self.log_message(f"[LOCALIZE] Tab {child}: Key='{key}' -> Translated='{translated}'")
             self.notebook.tab(tab_id, text=translated)
 
+    def on_language_changed_trace(self, *args):
+        """Wrapper to handle language change from variable trace."""
+        # Use root.after to ensure we are outside the trace update cycle if needed
+        self.root.after(1, self.on_language_changed)
+
     def on_language_changed(self, _event=None):
         display_val = self.language_var.get()
-        self.log_message(f'[EVENT] UI Language Selected: "{display_val}"')
+        if not display_val:
+            return
+            
+        print(f"[LANG] on_language_changed triggered. Value: {display_val}")
         
         raw_code = self.get_language_code_from_display(display_val)
         new_language = raw_code
-        self.log_message(f'[EVENT] Mapped UI choice to code: "{new_language}"')
         
-        if new_language == 'auto':
-            self.log_message('[EVENT] Mode is AUTO. Running detection...')
+        if raw_code == 'auto':
             new_language = self.detect_system_language()
+            print(f"[LANG] Auto-detected: {new_language}")
 
-        # 1. Update internal state and CONFIG BEFORE apply_localization
+        # Check if actually changed to avoid redundant refreshes
+        if getattr(self, 'current_language', None) == new_language:
+            # Still update config in case raw_code changed (e.g. from specific to 'auto')
+            self.config['language'] = raw_code
+            self.persist_language_preference()
+            return
+
+        self.log_message(f'[EVENT] Switching language to: {new_language} (Choice: {display_val})')
+        print(f"[LANG] Setting current_language to {new_language}")
+
+        # 1. Update state
         self.config['language'] = raw_code
         self.current_language = new_language
         self.persist_language_preference()
         
-        # 2. Force IMMEDIATE translation of EVERYTHING
-        self.log_message(f'[EVENT] Active Language set: {self.current_language}. Calling apply_localization()...')
+        # 2. Apply translations
         self.apply_localization()
         
-        # 3. Explicitly re-localize the active tab if it exists
-        if hasattr(self, '_active_tab_frame') and self._active_tab_frame:
-            self.log_message(f'[EVENT] Forcing refresh on active tab frame: {self._active_tab_frame}')
-            self.localize_widget_tree(self._active_tab_frame)
+        # 3. Explicitly re-localize everything again with a fresh tree traversal
+        self.localize_widget_tree(self.root)
         
-        # 4. Sync logical components
+        # 4. Sync other components
         self.unify_languages()
         
-        # 5. Flush event loop to show updates and logs
-        self.root.update()
-        # Force drain the log queue so user sees the localization results immediately
+        # 5. Force update
+        self.root.update_idletasks()
         self.drain_log_queue()
-        self.log_message('[EVENT] GUI refreshed and logs drained.')
+        print("[LANG] Language change completed.")
 
     def maximize_window(self):
         """Open the window in a maximized state with a geometry fallback."""
@@ -2447,7 +2471,6 @@ class YtDlpGUI:
         top_frame = ttk.Frame(self.root, padding='10')
         top_frame.pack(fill=tk.X, side=tk.TOP)
 
-        self.language_var = tk.StringVar(value=self.get_language_display(self.current_language))
         self.language_label = ttk.Label(top_frame, text='Language:')
         self.language_label.grid(row=0, column=2, sticky=tk.E, pady=5, padx=(20, 5))
         self.language_selector = ttk.Combobox(
@@ -2457,6 +2480,7 @@ class YtDlpGUI:
             values=list(LANGUAGE_OPTIONS.values()),
             state='readonly')
         self.language_selector.grid(row=0, column=3, sticky=tk.W, pady=5)
+        # The trace handles the change, but keeping bind for compatibility
         self.language_selector.bind('<<ComboboxSelected>>', self.on_language_changed)
 
         # URL input
@@ -2583,16 +2607,24 @@ class YtDlpGUI:
 
         file_row = ttk.Frame(frame)
         file_row.pack(fill=tk.X, pady=(0, 8))
-        ttk.Label(file_row, text='Batch file path:').pack(side=tk.LEFT)
+        lbl_file = ttk.Label(file_row, text=self.tr('Batch file path:'))
+        lbl_file.pack(side=tk.LEFT)
+        self.register_translatable_widget(lbl_file, 'Batch file path:')
+        
         self.batch_file_var = tk.StringVar()
         self.batch_file_var.trace_add('write', self.trigger_autosave)
         self.batch_file_input = ttk.Entry(file_row, textvariable=self.batch_file_var)
         self.batch_file_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 5))
-        ttk.Button(file_row, text='Browse...', command=self.browse_batch_file).pack(side=tk.LEFT)
+        btn_browse = ttk.Button(file_row, text=self.tr('Browse...'), command=self.browse_batch_file)
+        btn_browse.pack(side=tk.LEFT)
+        self.register_translatable_widget(btn_browse, 'Browse...')
 
         list_row = ttk.Frame(frame)
         list_row.pack(fill=tk.BOTH, expand=False, pady=(0, 8))
-        ttk.Label(list_row, text='Batch URLs (one per line):').pack(anchor=tk.W)
+        lbl_list = ttk.Label(list_row, text=self.tr('Batch URLs (one per line):'))
+        lbl_list.pack(anchor=tk.W)
+        self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
+        
         self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
         self.batch_urls_text.pack(fill=tk.X, expand=True)
         self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
@@ -2639,7 +2671,7 @@ class YtDlpGUI:
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
         # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
-        btn_parse = ttk.Button(row, text='Parse', width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
+        btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_parse, 'Parse')
         
@@ -5058,12 +5090,13 @@ class YtDlpGUI:
         self.console.config(state=tk.DISABLED)
 
     def log_message(self, message):
-        """Add message to the thread-safe queue"""
+        """Add message to the thread-safe queue and stdout for debugging."""
+        msg_str = str(message)
+        # Always output to terminal for visibility if GUI logs are failing or slow
+        print(msg_str)
+        
         if hasattr(self, 'log_queue'):
-            self.log_queue.put(str(message))
-        else:
-            # Fallback for early calls
-            print(message)
+            self.log_queue.put(msg_str)
 
     def load_config(self):
         """Load configuration from file"""
