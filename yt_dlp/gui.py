@@ -22,8 +22,9 @@ import atexit
 
 
 LANGUAGE_OPTIONS = {
-    'en': 'English',
+    'auto': 'Auto Detect / 自动识别',
     'zh': '中文',
+    'en': 'English',
     'ru': 'Русский',
     'ja': '日本語',
     'ko': '한국어',
@@ -34,6 +35,7 @@ LANGUAGE_OPTIONS = {
 
 
 GUI_DEFAULT_STATE = {
+    'language': 'auto',
     'url_entry': 'https://www.youtube.com/watch?v=DtPmasWzmu4&list=PLqyUAJYG3AWzd2mRGVLgCNKXbFcE4mAAk',
     'cookies_from_browser': 'chrome',
     'format': 'bv*[height<=1080]+ba',
@@ -827,28 +829,28 @@ TRANSLATIONS = {
         "Split HLS segments on discontinuity (--hls-split-discontinuity)": "在不连续处拆分 HLS 分片（--hls-split-discontinuity）",
     },
     'ko': {
-        "Extract audio (--extract-audio)": "仅提取音频",
-        "yt-dlp GUI - Video Downloader Configuration": "yt-dlp 图形界面 - 视频下载配置",
-        "Language:": "语言：",
-        "Paste Link:": "粘贴链接：",
-        "Stop": "停止",
-        "Download stopped. Would you like to delete partially downloaded files?": "下载已停止。是否要删除未下载完的临时文件？",
-        "Video URL(s):": "视频 URL：",
-        "Or Batch File:": "或批量文件：",
-        "Browse...": "浏览...",
-        "Download": "下载",
-        "List Formats": "列出格式",
-        "Extract Info": "提取信息",
-        "Load Config": "加载配置",
-        "Save Config": "保存配置",
-        "Parse Playlist": "解析播放列表",
-        "Exclude private videos": "隐藏私有视频",
-        "Reverse order": "播放列表倒序",
-        "Output Console": "输出控制台",
-        "Ready": "就绪",
-        "Clipboard is empty.": "剪贴板为空。",
-        "Pasted link from clipboard.": "已从剪贴板粘贴链接。",
-        "Paste Playlist": "粘贴播放列表",
+        "Extract audio (--extract-audio)": "오디오 추출 (-x)",
+        "yt-dlp GUI - Video Downloader Configuration": "yt-dlp GUI - 비디오 다운로드 설정",
+        "Language:": "언어:",
+        "Paste Link:": "링크 붙여넣기:",
+        "Stop": "중지",
+        "Download stopped. Would you like to delete partially downloaded files?": "다운로드가 중지되었습니다. 부분적으로 다운로드된 파일을 삭제하시겠습니까?",
+        "Video URL(s):": "비디오 URL:",
+        "Or Batch File:": "또는 배치 파일:",
+        "Browse...": "찾아보기...",
+        "Download": "다운로드",
+        "List Formats": "포맷 목록",
+        "Extract Info": "정보 추출",
+        "Load Config": "설정 불러오기",
+        "Save Config": "설정 저장",
+        "Parse Playlist": "재생목록 분석",
+        "Exclude private videos": "비공개 비디오 제외",
+        "Reverse order": "역순",
+        "Output Console": "출력 콘솔",
+        "Ready": "준비됨",
+        "Clipboard is empty.": "클립보드가 비어 있습니다.",
+        "Pasted link from clipboard.": "클립보드에서 링크를 붙여넣었습니다.",
+        "Paste Playlist": "재생목록 붙여넣기",
         "General": "일반 설정",
         "Network": "네트워크",
         "Geo-restriction": "地区限制",
@@ -1907,8 +1909,16 @@ class YtDlpGUI:
         self.config = {}
         self.config_file = os.path.expanduser('~/.yt-dlp-gui-config.json')
         self.load_config()
-        self.current_language = self.initialize_language()
+        # Initialize language and resolve to valid locale internally
+        self.initialize_language()
         
+        # Variables and state tracking
+        self.batch_file_var = tk.StringVar()
+        self.reverse_order = tk.BooleanVar(value=False)
+        self.exclude_private = tk.BooleanVar(value=True)
+        self.batch_urls_text = None # Will be set in create_batch_download_tab
+        self.bulk_rows = []
+
         # Thread-safe logging initialization
         import queue
         self.log_queue = queue.Queue()
@@ -1933,7 +1943,14 @@ class YtDlpGUI:
         if not text:
             return text
         translations = TRANSLATIONS.get(self.current_language, {})
-        return translations.get(text, text)
+        result = translations.get(text)
+        if result is None:
+            # If not found in current language, it returns the key itself
+            if self.current_language != 'en':
+                # self.log_message(f"[LOCALIZE] MISSING KEY in '{self.current_language}': '{text}'")
+                pass
+            return text
+        return result
 
     def translate_concat(self, prefix, value):
         """Translate a message prefix while preserving dynamic data."""
@@ -1943,56 +1960,59 @@ class YtDlpGUI:
         """Detect the preferred system language and map it to a supported locale."""
         candidates = []
 
-        try:
-            lang, _ = locale.getlocale()
-            if lang:
-                candidates.append(lang)
-        except Exception:
-            pass
+        # 1. First priority: macOS system defaults (Most reliable for user)
+        if sys.platform == 'darwin':
+            try:
+                # Get the AppleLanguages array (e.g. ("zh-Hans-US", "en-US"))
+                output = subprocess.check_output(['defaults', 'read', '-g', 'AppleLanguages'], 
+                                               stderr=subprocess.DEVNULL, text=True)
+                import re
+                matches = re.findall(r'"([^"]+)"', output)
+                candidates.extend(matches)
+            except Exception:
+                pass
 
-        try:
-            default_lang, _ = locale.getdefaultlocale()
-            if default_lang:
-                candidates.append(default_lang)
-        except Exception:
-            pass
-
+        # 2. Local environment variables
         for env_name in ('LC_ALL', 'LC_MESSAGES', 'LANG'):
             value = os.environ.get(env_name)
             if value:
                 candidates.append(value)
 
-        if sys.platform == 'darwin':
-            try:
-                apple_locale = subprocess.run(
-                    ['defaults', 'read', '-g', 'AppleLocale'],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                ).stdout.strip()
-                if apple_locale:
-                    candidates.append(apple_locale)
-            except Exception:
-                pass
+        # 3. Python standard locale
+        try:
+            lang, _ = locale.getlocale()
+            if lang: candidates.append(lang)
+        except Exception:
+            pass
 
         for candidate in candidates:
-            normalized = candidate.split('.', 1)[0].split('@', 1)[0].replace('-', '_').lower()
+            normalized = candidate.replace('-', '_').lower()
             prefix = normalized.split('_', 1)[0]
+            self.log_message(f'[DETECTION] Trying candidate: {candidate} -> prefix: {prefix}')
             if prefix in LANGUAGE_OPTIONS:
+                self.log_message(f'[DETECTION] SUCCESS! Matched system language: {prefix}')
                 return prefix
+        self.log_message('[DETECTION] FAILED. Defaulting to: en')
         return 'en'
 
     def initialize_language(self):
-        """Initialize UI language from config; fallback to system language if missing/invalid."""
+        """Initialize UI language from config; handle 'auto' by resolving to system language."""
         configured_language = self.config.get('language')
-        if self.config.get('language_initialized') and configured_language in LANGUAGE_OPTIONS:
+        
+        # If it's auto or not set, always perform fresh detection for the session
+        if not configured_language or configured_language == 'auto':
+            detected = self.detect_system_language()
+            self.current_language = detected
+            # Return 'auto' if that was the preference, so the caller knows the mode
+            return configured_language if configured_language == 'auto' else detected
+
+        if configured_language in LANGUAGE_OPTIONS:
+            self.current_language = configured_language
             return configured_language
 
-        language = self.detect_system_language()
-        self.config['language'] = language
-        self.config['language_initialized'] = True
-        self.write_config_to_disk(self.config)
-        return language
+        detected = self.detect_system_language()
+        self.current_language = detected
+        return detected
 
     def write_config_to_disk(self, config):
         with open(self.config_file, 'w', encoding='utf-8') as f:
@@ -2022,17 +2042,42 @@ class YtDlpGUI:
 
     def apply_localization(self):
         """Refresh translated text on widgets that expose a text property."""
+        self.log_message(f"[LOCALIZE] Starting UI localization to: {self.current_language}")
         self.root.title(self.tr(self.base_title))
 
         if hasattr(self, 'language_label'):
             self.language_label.config(text=self.tr('Language:'))
         if hasattr(self, 'language_selector'):
-            self.language_selector.set(self.get_language_display(self.current_language))
-        if hasattr(self, 'status_var') and not self.status_var.get():
+            # Use the raw config preference (e.g. 'auto') for the selector display
+            pref = self.config.get('language', 'auto')
+            self.language_selector.set(self.get_language_display(pref))
+        
+        # Force refresh status if it's a known state
+        if hasattr(self, 'status_var'):
             self.status_var.set(self.tr('Ready'))
 
         self.localize_widget_tree(self.root)
         self.localize_notebook_tabs()
+        
+        # Explicit treeview heading localization
+        if hasattr(self, 'playlist_tree'):
+            self.playlist_tree.heading('status', text=' ')
+            self.playlist_tree.heading('index', text=self.tr('#'))
+            self.playlist_tree.heading('title', text=self.tr('Title'))
+        
+        self.log_message("[LOCALIZE] UI localization complete.")
+        self.drain_log_queue()
+
+    def drain_log_queue(self):
+        """Force process all pending log messages immediately."""
+        if not hasattr(self, 'log_queue'):
+            return
+        while not self.log_queue.empty():
+            try:
+                msg = self.log_queue.get_nowait()
+                self._log_message_internal(msg)
+            except:
+                break
 
     def localize_widget_tree(self, widget):
         try:
@@ -2040,10 +2085,26 @@ class YtDlpGUI:
         except tk.TclError:
             text = None
 
-        if text is not None:
+        if text is not None and text.strip():
+            # IMPORTANT: We MUST use the original key. 
+            # If not in registry, WE DO NOT AUTO-REGISTER if it's not likely English.
+            # This prevents capturing already-translated text as a new key.
             if widget not in self._translatable_widgets:
-                self._translatable_widgets[widget] = text
-            widget.config(text=self.tr(self._translatable_widgets[widget]))
+                # Only auto-register if the text looks like an English key (contains ASCII/standard symbols)
+                try:
+                    text.encode('ascii')
+                    self._translatable_widgets[widget] = text
+                except UnicodeEncodeError:
+                    # If it's already non-ASCII, it's likely already translated.
+                    # We can't safely use it as a key unless we find it in TRANSLATIONS backwards.
+                    pass
+            
+            if widget in self._translatable_widgets:
+                key = self._translatable_widgets[widget]
+                translated = self.tr(key)
+                if translated != text:
+                    self.log_message(f"[LOCALIZE] Widget {widget}: Key='{key}' -> Translated='{translated}'")
+                    widget.config(text=translated)
 
         if isinstance(widget, tk.Canvas):
             for item in widget.find_all():
@@ -2060,19 +2121,46 @@ class YtDlpGUI:
             child = self.root.nametowidget(tab_id)
             if child not in self._notebook_tab_texts:
                 self._notebook_tab_texts[child] = self.notebook.tab(tab_id, 'text')
-            self.notebook.tab(tab_id, text=self.tr(self._notebook_tab_texts[child]))
+            
+            key = self._notebook_tab_texts[child]
+            translated = self.tr(key)
+            self.log_message(f"[LOCALIZE] Tab {child}: Key='{key}' -> Translated='{translated}'")
+            self.notebook.tab(tab_id, text=translated)
 
     def on_language_changed(self, _event=None):
-        new_language = self.get_language_code_from_display(self.language_var.get())
-        if new_language == self.current_language:
-            return
-        self.log_message(f'[DEBUG] GUI Language changing to {new_language}')
-        self.current_language = new_language
+        display_val = self.language_var.get()
+        self.log_message(f'[EVENT] UI Language Selected: "{display_val}"')
+        
+        raw_code = self.get_language_code_from_display(display_val)
+        new_language = raw_code
+        self.log_message(f'[EVENT] Mapped UI choice to code: "{new_language}"')
+        
+        if new_language == 'auto':
+            self.log_message('[EVENT] Mode is AUTO. Running detection...')
+            new_language = self.detect_system_language()
 
-        self.apply_localization()
-        self.unify_languages()
-        self.status_var.set(self.tr('Ready'))
+        # 1. Update internal state and CONFIG BEFORE apply_localization
+        self.config['language'] = raw_code
+        self.current_language = new_language
         self.persist_language_preference()
+        
+        # 2. Force IMMEDIATE translation of EVERYTHING
+        self.log_message(f'[EVENT] Active Language set: {self.current_language}. Calling apply_localization()...')
+        self.apply_localization()
+        
+        # 3. Explicitly re-localize the active tab if it exists
+        if hasattr(self, '_active_tab_frame') and self._active_tab_frame:
+            self.log_message(f'[EVENT] Forcing refresh on active tab frame: {self._active_tab_frame}')
+            self.localize_widget_tree(self._active_tab_frame)
+        
+        # 4. Sync logical components
+        self.unify_languages()
+        
+        # 5. Flush event loop to show updates and logs
+        self.root.update()
+        # Force drain the log queue so user sees the localization results immediately
+        self.drain_log_queue()
+        self.log_message('[EVENT] GUI refreshed and logs drained.')
 
     def maximize_window(self):
         """Open the window in a maximized state with a geometry fallback."""
@@ -2377,9 +2465,11 @@ class YtDlpGUI:
         
         self.paste_url_btn = ttk.Button(url_btn_frame, text='Paste Link:', command=self.paste_url_from_clipboard)
         self.paste_url_btn.pack(side=tk.LEFT)
+        self.register_translatable_widget(self.paste_url_btn, 'Paste Link:')
         
         self.playlist_btn = ttk.Button(url_btn_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
         self.playlist_btn.pack(side=tk.LEFT, padx=(5, 0))
+        self.register_translatable_widget(self.playlist_btn, 'Parse Playlist')
         
         self.url_var = tk.StringVar()
         self.url_var.trace_add('write', self.on_url_changed)
@@ -2390,6 +2480,7 @@ class YtDlpGUI:
         # Batch file option
         self.paste_playlist_btn = ttk.Button(top_frame, text='Paste Playlist', command=self.paste_playlist_from_clipboard)
         self.paste_playlist_btn.grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.register_translatable_widget(self.paste_playlist_btn, 'Paste Playlist')
         
         batch_frame = ttk.Frame(top_frame)
         batch_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
@@ -2403,10 +2494,23 @@ class YtDlpGUI:
         button_frame.grid(row=2, column=0, columnspan=2, pady=10)
         self.download_btn = ttk.Button(button_frame, text='Download', command=self.on_download_btn_click, width=15)
         self.download_btn.pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text='Extract Info', command=self.extract_info, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text='Load Config', command=self.load_config_dialog, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text='Save Config', command=self.save_config_dialog, width=15).pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(self.download_btn, 'Download')
+        
+        btn_list = ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15)
+        btn_list.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_list, 'List Formats')
+        
+        btn_ext = ttk.Button(button_frame, text='Extract Info', command=self.extract_info, width=15)
+        btn_ext.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_ext, 'Extract Info')
+        
+        btn_load = ttk.Button(button_frame, text='Load Config', command=self.load_config_dialog, width=15)
+        btn_load.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_load, 'Load Config')
+        
+        btn_save = ttk.Button(button_frame, text='Save Config', command=self.save_config_dialog, width=15)
+        btn_save.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_save, 'Save Config')
 
         # Separator
         ttk.Separator(self.root, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10, pady=5)
@@ -2467,6 +2571,9 @@ class YtDlpGUI:
         
         self.status_var.set(self.tr('Ready'))
         self.register_stateful_controls(set(self.__dict__) - before_names)
+        
+        # Apply initial localization based on detected/configured language
+        self.apply_localization()
 
     
     
@@ -2508,10 +2615,19 @@ class YtDlpGUI:
         self.add_bulk_row()
 
         action_row = ttk.Frame(frame)
+        action_row = ttk.Frame(frame)
         action_row.pack(fill=tk.X, pady=(8, 0))
-        ttk.Button(action_row, text='Bulk Paste', command=self.paste_bulk_urls_smart).pack(side=tk.LEFT)
-        ttk.Button(action_row, text='Parse Batch', command=self.parse_batch).pack(side=tk.LEFT, padx=5)
-        ttk.Button(action_row, text='Clear Pool', command=self.clear_all_bulk_rows).pack(side=tk.LEFT)
+        btn_paste = ttk.Button(action_row, text=self.tr('Bulk Paste'), command=self.paste_bulk_urls_smart)
+        btn_paste.pack(side=tk.LEFT)
+        self.register_translatable_widget(btn_paste, 'Bulk Paste')
+        
+        btn_batch = ttk.Button(action_row, text=self.tr('Parse Batch'), command=self.parse_batch)
+        btn_batch.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_batch, 'Parse Batch')
+        
+        btn_clear = ttk.Button(action_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
+        btn_clear.pack(side=tk.LEFT)
+        self.register_translatable_widget(btn_clear, 'Clear Pool')
         return frame
 
     def add_bulk_row(self, initial_text=''):
@@ -2521,12 +2637,22 @@ class YtDlpGUI:
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        ttk.Button(row, text='Parse', width=8, command=lambda v=var: self._parse_single_row_url(v.get())).pack(side=tk.LEFT, padx=2)
+        
+        # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
+        btn_parse = ttk.Button(row, text='Parse', width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
+        btn_parse.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_parse, 'Parse')
+        
         if len(self.bulk_rows) == 0:
-            ttk.Button(row, text='+', width=3, command=self.add_bulk_row).pack(side=tk.LEFT)
+            btn_add = ttk.Button(row, text='+', width=3, command=self.add_bulk_row)
+            btn_add.pack(side=tk.LEFT)
         else:
-            ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r)).pack(side=tk.LEFT)
+            btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
+            btn_remove.pack(side=tk.LEFT)
         self.bulk_rows.append({'frame': row, 'var': var})
+        
+        # Immediate sync for this newly added row
+        self.localize_widget_tree(row)
 
     def remove_bulk_row(self, frame):
         frame.destroy()
@@ -5028,10 +5154,20 @@ class YtDlpGUI:
 
 def main():
     """Main entry point for the GUI"""
-    root = tk.Tk()
-    app = YtDlpGUI(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        # Set theme and window style for macOS
+        style = ttk.Style(root)
+        if sys.platform == 'darwin':
+            style.theme_use('aqua')
+        
+        app = YtDlpGUI(root)
+        root.mainloop()
+    except Exception as e:
+        import traceback
+        print(f"FATAL ERROR during GUI startup:\n{traceback.format_exc()}")
 
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
