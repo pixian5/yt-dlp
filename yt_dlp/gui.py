@@ -746,34 +746,53 @@ class YtDlpGUI:
         return f'{self.tr(prefix)}{value}'
 
     def detect_system_language(self):
-        """Proactive system language detection for macOS/Unix"""
+        """Detect the preferred system language and map it to a supported locale."""
+        candidates = []
+
         try:
-            import subprocess
-            res = subprocess.check_output(['defaults', 'read', '-g', 'AppleLanguages'], 
-                                        stderr=subprocess.DEVNULL, universal_newlines=True)
-            if res:
-                lang_line = res.split('\n')[1].strip(' "(),')
-                prefix = lang_line.split('-')[0].lower()
-                if prefix in LANGUAGE_OPTIONS:
-                    return prefix
+            lang, _ = locale.getlocale()
+            if lang:
+                candidates.append(lang)
         except Exception:
             pass
 
         try:
-            lang, _ = locale.getdefaultlocale()
-            if lang:
-                prefix = lang.split('_')[0].lower()
-                if prefix in LANGUAGE_OPTIONS:
-                    return prefix
+            default_lang, _ = locale.getdefaultlocale()
+            if default_lang:
+                candidates.append(default_lang)
         except Exception:
             pass
+
+        for env_name in ('LC_ALL', 'LC_MESSAGES', 'LANG'):
+            value = os.environ.get(env_name)
+            if value:
+                candidates.append(value)
+
+        if sys.platform == 'darwin':
+            try:
+                apple_locale = subprocess.run(
+                    ['defaults', 'read', '-g', 'AppleLocale'],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                if apple_locale:
+                    candidates.append(apple_locale)
+            except Exception:
+                pass
+
+        for candidate in candidates:
+            normalized = candidate.split('.', 1)[0].split('@', 1)[0].replace('-', '_').lower()
+            prefix = normalized.split('_', 1)[0]
+            if prefix in LANGUAGE_OPTIONS:
+                return prefix
         return 'en'
 
     def initialize_language(self):
-        """Detect and persist the initial language only on the first launch."""
-        if self.config.get('language_initialized'):
-            language = self.config.get('language', 'en')
-            return language if language in LANGUAGE_OPTIONS else 'en'
+        """Initialize UI language from config; fallback to system language if missing/invalid."""
+        configured_language = self.config.get('language')
+        if configured_language in LANGUAGE_OPTIONS:
+            return configured_language
 
         language = self.detect_system_language()
         self.config['language'] = language
@@ -784,6 +803,15 @@ class YtDlpGUI:
     def write_config_to_disk(self, config):
         with open(self.config_file, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
+
+    def persist_language_preference(self):
+        """Persist only language-related fields for instant switch without heavy full-state save."""
+        try:
+            self.config['language'] = self.current_language
+            self.config['language_initialized'] = True
+            self.write_config_to_disk(self.config)
+        except Exception as e:
+            self.log_message(self.translate_concat('Failed to save configuration: ', str(e)))
 
     def get_language_display(self, code):
         return LANGUAGE_OPTIONS.get(code, LANGUAGE_OPTIONS['en'])
@@ -821,17 +849,13 @@ class YtDlpGUI:
         if text is not None:
             if widget not in self._translatable_widgets:
                 self._translatable_widgets[widget] = text
-            try:
-                widget.config(text=self.tr(self._translatable_widgets[widget]))
-            except Exception:
-                pass
+            widget.config(text=self.tr(self._translatable_widgets[widget]))
 
         if isinstance(widget, tk.Canvas):
             for item in widget.find_all():
                 if widget.type(item) == 'window':
                     sub_widget = widget.nametowidget(widget.itemcget(item, 'window'))
                     self.localize_widget_tree(sub_widget)
-
         for child in widget.winfo_children():
             self.localize_widget_tree(child)
 
@@ -850,13 +874,11 @@ class YtDlpGUI:
             return
         self.log_message(f'[DEBUG] GUI Language changing to {new_language}')
         self.current_language = new_language
-        
-        # ABSOLUTE UNIFICATION
-        self.unify_languages()
-                
+
         self.apply_localization()
+        self.unify_languages()
         self.status_var.set(self.tr('Ready'))
-        self.save_config(silent=True)
+        self.persist_language_preference()
 
     def maximize_window(self):
         """Open the window in a maximized state with a geometry fallback."""
@@ -989,6 +1011,23 @@ class YtDlpGUI:
         if hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame:
             pass # Treeview handles sizing automatically
 
+    
+    def trigger_autosave(self, *args):
+        """Request an autosave with a short debouncing delay."""
+        if hasattr(self, '_autosave_timer') and self._autosave_timer:
+            self.root.after_cancel(self._autosave_timer)
+        self._autosave_timer = self.root.after(500, lambda: self.save_config(silent=True))
+
+    def ensure_all_tabs_built(self):
+        """Build all tabs before full-state serialization."""
+        if not hasattr(self, 'notebook'):
+            return
+        # Force building of all lazy tabs
+        for tab_id in list(self._tab_builders.keys()):
+            tab_frame = self._tab_controls.get(tab_id)
+            if tab_frame:
+                self.ensure_tab_built(tab_frame)
+    
     def register_stateful_controls(self, attribute_names):
         """Track GUI-only controls so they can be serialized independently and trigger autosave."""
         for name in attribute_names:
@@ -1133,7 +1172,8 @@ class YtDlpGUI:
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
         # Register tabs for lazy creation
-        general_frame = self.add_lazy_tab('general', 'General', self.create_general_tab)
+        general_frame =         self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
+        self.add_lazy_tab('general', 'General', self.create_general_tab)
         self.playlist_tab_frame = self.create_playlist_tab()
         self.notebook.add(self.playlist_tab_frame, text='Playlist')
         self._built_tabs.add(self.playlist_tab_frame)
@@ -1183,6 +1223,157 @@ class YtDlpGUI:
         self.status_var.set(self.tr('Ready'))
         self.register_stateful_controls(set(self.__dict__) - before_names)
 
+    
+    
+    def create_batch_download_tab(self, frame=None):
+        """Create Batch Download tab."""
+        frame = frame or ttk.Frame(self.notebook, padding='10')
+
+        file_row = ttk.Frame(frame)
+        file_row.pack(fill=tk.X, pady=(0, 8))
+        ttk.Label(file_row, text='Batch file path:').pack(side=tk.LEFT)
+        self.batch_file_var = tk.StringVar()
+        self.batch_file_var.trace_add('write', self.trigger_autosave)
+        self.batch_file_input = ttk.Entry(file_row, textvariable=self.batch_file_var)
+        self.batch_file_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 5))
+        ttk.Button(file_row, text='Browse...', command=self.browse_batch_file).pack(side=tk.LEFT)
+
+        list_row = ttk.Frame(frame)
+        list_row.pack(fill=tk.BOTH, expand=False, pady=(0, 8))
+        ttk.Label(list_row, text='Batch URLs (one per line):').pack(anchor=tk.W)
+        self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
+        self.batch_urls_text.pack(fill=tk.X, expand=True)
+        self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
+
+        dyn_container = ttk.Frame(frame)
+        dyn_container.pack(fill=tk.BOTH, expand=True)
+        self.bulk_canvas = tk.Canvas(dyn_container, highlightthickness=0)
+        vsb = ttk.Scrollbar(dyn_container, orient='vertical', command=self.bulk_canvas.yview)
+        self.bulk_scroll_frame = ttk.Frame(self.bulk_canvas)
+        self.bulk_scroll_frame.bind(
+            '<Configure>',
+            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+        c_win = self.bulk_canvas.create_window((0, 0), window=self.bulk_scroll_frame, anchor='nw')
+        self.bulk_canvas.bind('<Configure>', lambda e: self.bulk_canvas.itemconfig(c_win, width=e.width))
+        self.bulk_canvas.configure(yscrollcommand=vsb.set)
+        self.bulk_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.bulk_rows = []
+        self.add_bulk_row()
+
+        action_row = ttk.Frame(frame)
+        action_row.pack(fill=tk.X, pady=(8, 0))
+        ttk.Button(action_row, text='Bulk Paste', command=self.paste_bulk_urls_smart).pack(side=tk.LEFT)
+        ttk.Button(action_row, text='Parse Batch', command=self.parse_batch).pack(side=tk.LEFT, padx=5)
+        ttk.Button(action_row, text='Clear Pool', command=self.clear_all_bulk_rows).pack(side=tk.LEFT)
+        return frame
+
+    def add_bulk_row(self, initial_text=''):
+        row = ttk.Frame(self.bulk_scroll_frame)
+        row.pack(fill=tk.X, pady=2)
+        var = tk.StringVar(value=initial_text)
+        var.trace_add('write', self.trigger_autosave)
+        entry = ttk.Entry(row, textvariable=var)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        ttk.Button(row, text='Parse', width=8, command=lambda v=var: self._parse_single_row_url(v.get())).pack(side=tk.LEFT, padx=2)
+        if len(self.bulk_rows) == 0:
+            ttk.Button(row, text='+', width=3, command=self.add_bulk_row).pack(side=tk.LEFT)
+        else:
+            ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r)).pack(side=tk.LEFT)
+        self.bulk_rows.append({'frame': row, 'var': var})
+
+    def remove_bulk_row(self, frame):
+        frame.destroy()
+        self.bulk_rows = [r for r in self.bulk_rows if r['frame'] != frame]
+        if not self.bulk_rows:
+            self.add_bulk_row()
+
+    def remove_batch_row(self, frame):
+        """Compatibility alias for previous function name."""
+        self.remove_bulk_row(frame)
+
+    def paste_bulk_urls_smart(self):
+        """Smartly detect and distribute URLs from clipboard."""
+        try:
+            raw = self.root.clipboard_get()
+            lines = [l.strip() for l in raw.splitlines() if l.strip()]
+            if not lines:
+                return
+            if self.bulk_rows and not self.bulk_rows[0]['var'].get().strip():
+                self.bulk_rows[0]['var'].set(lines[0])
+                lines = lines[1:]
+            for line in lines:
+                self.add_bulk_row(line)
+            self.log_message(f'Imported {len(lines) + 1} URLs into pool.')
+        except Exception as e:
+            self.log_message(f'Paste failed: {e}')
+
+    def clear_all_bulk_rows(self):
+        for row in self.bulk_rows[1:]:
+            row['frame'].destroy()
+        if self.bulk_rows:
+            self.bulk_rows = self.bulk_rows[:1]
+            self.bulk_rows[0]['var'].set('')
+        if hasattr(self, 'batch_urls_text'):
+            self.batch_urls_text.delete('1.0', tk.END)
+
+    def _parse_single_row_url(self, url):
+        url = (url or '').strip()
+        if not url:
+            return
+        self.url_var.set(url)
+        self.parse_playlist()
+
+    def parse_single_url(self, url):
+        """Compatibility alias for previous function name."""
+        self._parse_single_row_url(url)
+
+    def parse_batch(self):
+        """Parse all batch inputs and normalize them into the main batch input box."""
+        thread = threading.Thread(target=self._parse_batch_worker, daemon=True)
+        thread.start()
+
+    def _parse_batch_worker(self):
+        urls = []
+
+        file_path = ''
+        if hasattr(self, 'batch_file_var'):
+            file_path = self.batch_file_var.get().strip()
+        if file_path and os.path.isfile(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    urls.extend([line.strip() for line in f if line.strip() and not line.strip().startswith('#')])
+            except Exception as e:
+                self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
+
+        if hasattr(self, 'batch_urls_text'):
+            text_urls = [line.strip() for line in self.batch_urls_text.get('1.0', tk.END).splitlines() if line.strip()]
+            urls.extend(text_urls)
+
+        for row in getattr(self, 'bulk_rows', []):
+            value = row['var'].get().strip()
+            if value:
+                urls.append(value)
+
+        seen = set()
+        normalized = []
+        for url in urls:
+            if url not in seen:
+                seen.add(url)
+                normalized.append(url)
+
+        if not normalized:
+            self.log_message('No valid batch URLs found.')
+            self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
+            return
+
+        content = '\n'.join(normalized)
+        self.root.after(0, lambda: self.batch_file_entry.delete(0, tk.END))
+        self.root.after(0, lambda: self.batch_file_entry.insert(0, content))
+        self.log_message(f'Batch parsed: {len(normalized)} URL(s) ready.')
+        self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
+    
     def create_playlist_tab(self, frame=None):
         """Create Playlist Select tab using efficient Treeview"""
         frame = frame or ttk.Frame(self.notebook, padding='10')
@@ -1286,12 +1477,6 @@ class YtDlpGUI:
     def _on_playlist_option_changed(self):
         if hasattr(self, 'playlist_entries_data') and self.playlist_entries_data:
             self.root.after(0, self._show_playlist_tab, "Playlist")
-
-    def _on_playlist_select_all(self):
-        state = self.playlist_select_all_var.get()
-        if hasattr(self, 'playlist_video_vars'):
-            for var in self.playlist_video_vars.values():
-                var.set(state)
 
     def create_general_tab(self, frame=None):
         """Create General Options tab"""
@@ -2476,6 +2661,8 @@ class YtDlpGUI:
         if filename:
             self.batch_file_entry.delete(0, tk.END)
             self.batch_file_entry.insert(0, filename)
+            if hasattr(self, 'batch_file_var'):
+                self.batch_file_var.set(filename)
 
     def paste_url_from_clipboard(self):
         try:
@@ -3419,6 +3606,9 @@ class YtDlpGUI:
                 if is_private and self.playlist_exclude_private_var.get():
                     continue
                 filtered_entries.append((i + 1, title))
+
+            if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
+                filtered_entries = list(reversed(filtered_entries))
             
             total_visible = len(filtered_entries)
             self.vis_to_orig = {}
