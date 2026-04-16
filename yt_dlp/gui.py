@@ -2053,7 +2053,7 @@ class YtDlpGUI:
 
     def apply_localization(self):
         """Refresh translated text on widgets that expose a text property."""
-        self.log_message(f"[LOCALIZE] Starting UI localization to: {self.current_language}")
+        # self.log_message(f"[LOCALIZE] Starting UI localization to: {self.current_language}")
         self.root.title(self.tr(self.base_title))
 
         if hasattr(self, 'language_label'):
@@ -2076,7 +2076,7 @@ class YtDlpGUI:
             self.playlist_tree.heading('index', text=self.tr('#'))
             self.playlist_tree.heading('title', text=self.tr('Title'))
         
-        self.log_message("[LOCALIZE] UI localization complete.")
+        # self.log_message("[LOCALIZE] UI localization complete.")
         self.drain_log_queue()
 
     def drain_log_queue(self):
@@ -2114,7 +2114,7 @@ class YtDlpGUI:
                 key = self._translatable_widgets[widget]
                 translated = self.tr(key)
                 if translated != text:
-                    self.log_message(f"[LOCALIZE] Widget {widget}: Key='{key}' -> Translated='{translated}'")
+                    # self.log_message(f"[LOCALIZE] Widget {widget}: Key='{key}' -> Translated='{translated}'")
                     widget.config(text=translated)
 
         if isinstance(widget, tk.Canvas):
@@ -2135,7 +2135,7 @@ class YtDlpGUI:
             
             key = self._notebook_tab_texts[child]
             translated = self.tr(key)
-            self.log_message(f"[LOCALIZE] Tab {child}: Key='{key}' -> Translated='{translated}'")
+            # self.log_message(f"[LOCALIZE] Tab {child}: Key='{key}' -> Translated='{translated}'")
             self.notebook.tab(tab_id, text=translated)
 
     def on_language_changed_trace(self, *args):
