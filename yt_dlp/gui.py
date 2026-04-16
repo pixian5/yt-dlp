@@ -2077,21 +2077,70 @@ class YtDlpGUI:
     def maximize_window(self):
         """Open the window in a maximized state with a geometry fallback."""
         self.root.update_idletasks()
+        screen_width, screen_height = self.get_effective_screen_size()
+
         try:
             self.root.state('zoomed')
-            return
+            self.root.update_idletasks()
+            if (self.root.winfo_width() >= int(screen_width * 0.6)
+                    and self.root.winfo_height() >= int(screen_height * 0.6)):
+                return
         except tk.TclError:
             pass
 
         try:
             self.root.attributes('-zoomed', True)
-            return
+            self.root.update_idletasks()
+            if (self.root.winfo_width() >= int(screen_width * 0.6)
+                    and self.root.winfo_height() >= int(screen_height * 0.6)):
+                return
         except tk.TclError:
             pass
 
+        self.root.geometry(f'{screen_width}x{screen_height}+0+0')
+
+    def get_effective_screen_size(self):
+        """Return a usable screen size, with a sensible fallback when Tk reports 0x0."""
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        self.root.geometry(f'{screen_width}x{screen_height}+0+0')
+        if screen_width <= 1 or screen_height <= 1:
+            return 1440, 900
+        return screen_width, screen_height
+
+    def ensure_window_visible(self):
+        """Ensure the window is visible on-screen and has a sane minimum size."""
+        self.root.update_idletasks()
+
+        screen_width, screen_height = self.get_effective_screen_size()
+        width = max(1, self.root.winfo_width())
+        height = max(1, self.root.winfo_height())
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+
+        too_small = width < 900 or height < 600
+        offscreen = (
+            x <= -(width // 2)
+            or y <= -(height // 2)
+            or x >= screen_width - 80
+            or y >= screen_height - 80
+        )
+
+        if not too_small and not offscreen:
+            return
+
+        target_width = min(screen_width, max(1100, int(screen_width * 0.9)))
+        target_height = min(screen_height, max(720, int(screen_height * 0.85)))
+        target_x = max(0, (screen_width - target_width) // 2)
+        target_y = max(0, (screen_height - target_height) // 3)
+
+        try:
+            self.root.state('normal')
+        except tk.TclError:
+            pass
+
+        self.root.geometry(f'{target_width}x{target_height}+{target_x}+{target_y}')
+        self.root.deiconify()
+        self.root.lift()
 
     def bring_to_front(self):
         """Request focus and foreground status, especially on macOS."""
@@ -2129,6 +2178,8 @@ class YtDlpGUI:
         """Maximize and foreground the window on launch."""
         self.maximize_window()
         self.bring_to_front()
+        self.root.after(200, self.ensure_window_visible)
+        self.root.after(800, self.ensure_window_visible)
 
     def add_lazy_tab(self, key, title, builder):
         """Register a notebook tab whose contents are built on first access."""
