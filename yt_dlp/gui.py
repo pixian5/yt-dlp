@@ -930,11 +930,27 @@ class YtDlpGUI:
             pass # Treeview handles sizing automatically
 
     def register_stateful_controls(self, attribute_names):
-        """Track GUI-only controls so they can be serialized independently."""
+        """Track GUI-only controls so they can be serialized independently and trigger autosave."""
         for name in attribute_names:
             value = getattr(self, name, None)
             if isinstance(value, (tk.BooleanVar, ttk.Entry, ttk.Combobox, scrolledtext.ScrolledText)):
                 self._stateful_controls[name] = value
+                
+                # Setup autosave triggers
+                if isinstance(value, tk.Variable):
+                    value.trace_add('write', self.trigger_autosave)
+                elif isinstance(value, (ttk.Entry, ttk.Combobox)):
+                    value.bind('<KeyRelease>', self.trigger_autosave)
+                    if isinstance(value, ttk.Combobox):
+                        value.bind('<<ComboboxSelected>>', self.trigger_autosave)
+                elif isinstance(value, scrolledtext.ScrolledText):
+                    value.bind('<KeyRelease>', self.trigger_autosave)
+
+    def trigger_autosave(self, *args):
+        """Request an autosave with a short debouncing delay."""
+        if hasattr(self, '_autosave_timer') and self._autosave_timer:
+            self.root.after_cancel(self._autosave_timer)
+        self._autosave_timer = self.root.after(500, lambda: self.save_config(silent=True))
 
     def ensure_all_tabs_built(self):
         """Build all tabs before full-state serialization."""
@@ -987,7 +1003,6 @@ class YtDlpGUI:
         """Reset playlist status when URL is manually changed by user."""
         current_url = self.url_var.get().strip()
         if getattr(self, 'playlist_parsed_url', None) and current_url != self.playlist_parsed_url:
-            self.log_message("[DEBUG] URL changed - resetting parsed playlist data")
             self.playlist_parsed_url = None
             if hasattr(self, 'playlist_tree'):
                 self.playlist_tree.delete(*self.playlist_tree.get_children())
@@ -1092,9 +1107,19 @@ class YtDlpGUI:
         self.console.pack(fill=tk.BOTH, expand=True)
 
         # Status bar
+        # Status bar with dual panes (Status | Progress)
+        status_frame = ttk.Frame(self.root, relief=tk.SUNKEN)
+        status_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        
         self.status_var = tk.StringVar(value='Ready')
-        status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.pack(fill=tk.X, side=tk.BOTTOM)
+        status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor=tk.W)
+        status_label.pack(side=tk.LEFT, padx=5, pady=2)
+
+        self.progress_var = tk.StringVar(value='')
+        # Using a distinct color and larger font for progress
+        self.progress_label = ttk.Label(status_frame, textvariable=self.progress_var, anchor=tk.E, font=('TkDefaultFont', 11, 'bold'), foreground='#0056b3')
+        self.progress_label.pack(side=tk.RIGHT, padx=10, pady=2)
+        
         self.status_var.set(self.tr('Ready'))
         self.register_stateful_controls(set(self.__dict__) - before_names)
 
@@ -2453,7 +2478,6 @@ class YtDlpGUI:
             
         lang_to_tag = {'zh': 'zh-CN', 'en': 'en', 'ja': 'ja', 'ko': 'ko', 'ru': 'ru', 'es': 'es', 'fr': 'fr', 'de': 'de'}
         target_code = lang_to_tag.get(self.current_language, 'zh-CN')
-        self.log_message(f'[DEBUG] Unifying languages: GUI({self.current_language}) -> Metadata({target_code})')
         self.refresh_metadata_lang_values(force_code=target_code)
 
     def refresh_metadata_lang_values(self, force_code=None):
@@ -3223,25 +3247,18 @@ class YtDlpGUI:
                     task_args.extend(['--playlist-items', str(original_idx)])
                     task_args.extend(['-o', out_path])
                     tasks.append((visual_idx, task_args))
-            self.log_message(f'[DEBUG] tasks built: {len(tasks)} selected')
-        else:
-            self.log_message('[DEBUG] single video / batch mode')
+        
+        # If no playlist tasks were built (not a playlist or nothing checked), treat as single/batch
+        if not tasks:
             tasks.append(('Single', base_args))
 
-        if not tasks:
-            self.log_message('[DEBUG] no tasks — showing warning')
-            messagebox.showwarning(self.tr('No Selection'), self.tr('Please select videos.'))
-            self._restore_download_button()
-            return
-
-        self.log_message(f'[DEBUG] launching thread with {len(tasks)} tasks')
         self.console.config(state=tk.NORMAL)
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
 
         thread = threading.Thread(target=self.run_ytdlp, args=(tasks,), daemon=True)
         thread.start()
-        self.log_message('[DEBUG] thread started')
+
 
     def parse_playlist(self):
         url = self.url_entry.get().strip()
@@ -3397,10 +3414,26 @@ class YtDlpGUI:
         self.root.after(100, self._start_log_watcher)
 
     def _log_message_internal(self, message):
-        """Internal method to update the console text widget"""
+        """Internal method to update the console text widget and redirect progress to status bar"""
+        clean_msg = message.strip()
+        
+        # Redirect [download] progress to the status bar instead of the console
+        # Typically looks like: [download]  1.2% of 10.00MiB at ...
+        if clean_msg.startswith('[download]') and '%' in clean_msg:
+            # Strip '[download]' prefix for a cleaner look as requested
+            display_msg = clean_msg.replace('[download]', '').strip()
+            self.progress_var.set(display_msg)
+            # Clear progress bar once finished or moved to next stage
+            if '100%' in clean_msg:
+                self.root.after(3000, lambda: self.progress_var.set('') if '100%' in self.progress_var.get() else None)
+            return
+
         self.console.config(state=tk.NORMAL)
+        # Check if we were already at the bottom before adding content
+        at_bottom = self.console.yview()[1] == 1.0
         self.console.insert(tk.END, message + '\n')
-        self.console.see(tk.END)
+        if at_bottom:
+            self.console.see(tk.END)
         self.console.config(state=tk.DISABLED)
 
     def log_message(self, message):
