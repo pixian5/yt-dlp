@@ -2382,6 +2382,9 @@ class YtDlpGUI:
         general_frame =         self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
         self.add_lazy_tab('general', 'General', self.create_general_tab)
         self.playlist_tab_frame = self.create_playlist_tab()
+        if self.playlist_tab_frame is None:
+            self.playlist_tab_frame = ttk.Frame(self.notebook, padding='10')
+            self.create_playlist_tab(self.playlist_tab_frame)
         self.notebook.add(self.playlist_tab_frame, text='Playlist')
         self._built_tabs.add(self.playlist_tab_frame)
         self._notebook_tab_texts[self.playlist_tab_frame] = 'Playlist'
