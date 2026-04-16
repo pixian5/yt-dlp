@@ -2335,17 +2335,19 @@ class YtDlpGUI:
         self.url_entry.grid(row=0, column=1, sticky=tk.EW, padx=5, pady=5)
         top_frame.columnconfigure(1, weight=1)
 
-        # Batch file option
-        self.paste_playlist_btn = ttk.Button(top_frame, text='Paste Playlist', command=self.paste_playlist_from_clipboard)
-        self.paste_playlist_btn.grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.register_translatable_widget(self.paste_playlist_btn, 'Paste Playlist')
-        
-        batch_frame = ttk.Frame(top_frame)
-        batch_frame.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
-        
-        self.batch_file_entry = ttk.Entry(batch_frame)
-        self.batch_file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(batch_frame, text='Browse...', command=self.browse_batch_file).pack(side=tk.LEFT, padx=(5, 0))
+        # Batch file option (removed UI entry as requested). Provide a minimal
+        # dummy entry object so existing code calling .get/.delete/.insert won't crash.
+        class _NullEntry:
+            def delete(self, *a, **k):
+                return None
+            def insert(self, *a, **k):
+                return None
+            def get(self):
+                return ''
+            def focus_set(self):
+                return None
+
+        self.batch_file_entry = _NullEntry()
 
         # Quick action buttons
         button_frame = ttk.Frame(top_frame)
