@@ -2636,13 +2636,27 @@ class YtDlpGUI:
         btn_sel_inv.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_sel_inv, 'Invert Select')
 
-        # The following options were previously exposed as checkboxes:
-        # - Reverse order
-        # - Exclude private videos
-        # Per user request these controls have been removed from the UI; keep internal
-        # variables with their default values so existing logic continues to work.
+        # Restore playlist option checkboxes (deduplicated) so they are visible once
+        # again in the playlist tab. Keep behavior consistent with internal vars.
         self.playlist_reverse_var = tk.BooleanVar(value=False)
+        cb_rev = ttk.Checkbutton(
+            top_ctrl,
+            text="Reverse order",
+            variable=self.playlist_reverse_var,
+            command=self._on_playlist_option_changed
+        )
+        cb_rev.pack(side=tk.LEFT, padx=(20, 0))
+        self.register_translatable_widget(cb_rev, 'Reverse order')
+
         self.playlist_exclude_private_var = tk.BooleanVar(value=True)
+        cb_priv = ttk.Checkbutton(
+            top_ctrl,
+            text="Exclude private videos",
+            variable=self.playlist_exclude_private_var,
+            command=self._on_playlist_option_changed
+        )
+        cb_priv.pack(side=tk.LEFT, padx=(20, 0))
+        self.register_translatable_widget(cb_priv, 'Exclude private videos')
         
         # TREEVIEW for heavy listing
         tree_frame = ttk.Frame(frame)
