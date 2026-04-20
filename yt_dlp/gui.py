@@ -2521,17 +2521,17 @@ class YtDlpGUI:
         if bulk_urls:
             # Chunked loading to prevent long UI freeze
             def _chunked_load(start_idx):
-                chunk_size = 25
+                chunk_size = 100
                 end_idx = min(start_idx + chunk_size, len(bulk_urls))
                 for i in range(start_idx, end_idx):
-                    self.add_bulk_row(bulk_urls[i], localize=False)
+                    self.add_bulk_row(bulk_urls[i], localize=False, register=False)
                 
                 if end_idx < len(bulk_urls):
                     self.root.after(1, lambda: _chunked_load(end_idx))
                 else:
-                    self.localize_widget_tree(self.bulk_scroll_frame)
-                    # Force one scroll update
+                    # Final layout and visibility update
                     self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+                    self.bulk_canvas.yview_moveto(0)
 
             _chunked_load(0)
         else:
@@ -2539,7 +2539,7 @@ class YtDlpGUI:
 
         return frame
 
-    def add_bulk_row(self, initial_text='', localize=True):
+    def add_bulk_row(self, initial_text='', localize=True, register=True):
         row = ttk.Frame(self.bulk_scroll_frame)
         row.pack(fill=tk.X, pady=2)
         var = tk.StringVar(value=initial_text)
@@ -2548,9 +2548,13 @@ class YtDlpGUI:
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
         # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
-        btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
+        # Use localized text immediately to avoid the need for a separate localization pass during bulk load
+        parse_text = self.tr('Parse')
+        btn_parse = ttk.Button(row, text=parse_text, width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_parse, 'Parse')
+        
+        if register:
+            self.register_translatable_widget(btn_parse, 'Parse')
         
         if len(self.bulk_rows) == 0:
             btn_add = ttk.Button(row, text='+', width=3, command=self.add_bulk_row)
@@ -4111,17 +4115,18 @@ class YtDlpGUI:
             imported_count += 1
         
         def _chunked_paste(l_idx):
-            chunk = 20
+            chunk = 100
             end = min(l_idx + chunk, len(lines))
             for i in range(l_idx, end):
-                self.add_bulk_row(lines[i], localize=False)
+                self.add_bulk_row(lines[i], localize=False, register=False)
             
             if end < len(lines):
                 self.root.after(1, lambda: _chunked_paste(end))
             else:
-                self.localize_widget_tree(self.bulk_scroll_frame)
                 self.trigger_autosave()
                 self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + imported_count)))
+                # Layout update at the very end
+                self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
 
         if lines:
             _chunked_paste(0)
