@@ -71,6 +71,8 @@ TRANSLATIONS = {
         'Ready': '就绪',
         'Clipboard is empty.': '剪贴板为空。',
         'Pasted link from clipboard.': '已从剪贴板粘贴链接。',
+        'Paste': '粘贴',
+        'Pasted into batch text box.': '已粘贴到批量文本框。',
         'Paste Playlist': '粘贴播放列表',
         'Batch Download': '批量下载',
         'Playlist': '播放列表',
@@ -362,6 +364,8 @@ TRANSLATIONS = {
         "Ready": "Готово",
         "Clipboard is empty.": "Буфер обмена пуст.",
         "Pasted link from clipboard.": "Ссылка вставлена из буфера обмена.",
+        "Paste": "Вставить",
+        "Pasted into batch text box.": "Вставлено в текстовое поле пакета.",
         "Paste Playlist": "Вставить плейлист",
         "Batch Download": "Пакетная загрузка",
         "Playlist": "Плейлист",
@@ -552,6 +556,8 @@ TRANSLATIONS = {
         "Ready": "準備完了",
         "Clipboard is empty.": "クリップボードが空です。",
         "Pasted link from clipboard.": "クリップボードからリンクを貼り付けました。",
+        "Paste": "貼り付け",
+        "Pasted into batch text box.": "バッチテキストボックスに貼り付けました。",
         "Paste Playlist": "プレイリストを貼り付け",
         "Batch Download": "一括ダウンロード",
         "Playlist": "プレイリスト",
@@ -737,6 +743,8 @@ TRANSLATIONS = {
         "Ready": "준비됨",
         "Clipboard is empty.": "클립보드가 비어 있습니다.",
         "Pasted link from clipboard.": "클립보드에서 링크를 붙여넣었습니다.",
+        "Paste": "붙여넣기",
+        "Pasted into batch text box.": "배치 텍스트 상자에 붙여넣었습니다.",
         "Paste Playlist": "재생목록 붙여넣기",
         "Batch Download": "배치 다운로드",
         "Playlist": "재생목록",
@@ -2472,8 +2480,14 @@ class YtDlpGUI:
         lbl_list.pack(side=tk.LEFT)
         self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
         
-        # Control buttons will be placed below the batch URLs text area (added after the text widget)
+        btn_paste_batch = ttk.Button(header_row, text=self.tr('Paste'), command=self.paste_to_batch_text)
+        btn_paste_batch.pack(side=tk.LEFT, padx=(8, 2))
+        self.register_translatable_widget(btn_paste_batch, 'Paste')
 
+        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse'), command=self.parse_batch_text)
+        btn_parse_batch.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_parse_batch, 'Parse')
+        
         # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
         btn_clear.pack(side=tk.RIGHT)
@@ -4058,6 +4072,40 @@ class YtDlpGUI:
         self.url_entry.insert(0, clipboard_text)
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
+
+    def paste_to_batch_text(self):
+        try:
+            content = self.root.clipboard_get().strip()
+        except tk.TclError:
+            content = ''
+
+        if not content:
+            self.log_message(self.tr('Clipboard is empty.'))
+            return
+
+        self.batch_urls_text.insert(tk.END, content + '\n')
+        self.batch_urls_text.see(tk.END)
+        self.trigger_autosave()
+        self.log_message(self.tr('Pasted into batch text box.'))
+
+    def parse_batch_text(self):
+        content = self.batch_urls_text.get('1.0', tk.END).strip()
+        if not content:
+            return
+        
+        urls = [line.strip() for line in content.splitlines() if line.strip()]
+        if not urls:
+            return
+        
+        # Check if we should clear current rows if they are empty
+        if len(self.bulk_rows) == 1 and not self.bulk_rows[0]['var'].get().strip():
+            self.bulk_rows[0]['var'].set(urls[0])
+            urls = urls[1:]
+            
+        for url in urls:
+            self.add_bulk_row(url)
+        
+        self.log_message(self.tr('Parsed {} URLs from batch text box.').replace('{}', str(len(urls) + (1 if content else 0))))
 
     def paste_playlist_from_clipboard(self):
         try:
