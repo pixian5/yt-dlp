@@ -1762,7 +1762,7 @@ class YtDlpGUI:
         self.batch_file_var = tk.StringVar()
         self.reverse_order = tk.BooleanVar(value=False)
         self.exclude_private = tk.BooleanVar(value=True)
-        self.batch_urls_text = None
+        self.bulk_rows = []
         
         # Language selection variable with trace
         self.language_var = tk.StringVar()
@@ -2300,12 +2300,6 @@ class YtDlpGUI:
                 self._set_text_value(widget, value or '')
             del self._pending_gui_state[name]
 
-    def clear_all_bulk_rows(self):
-        """Clear all batch URLs from the text area."""
-        if hasattr(self, 'batch_urls_text'):
-            self.batch_urls_text.delete('1.0', tk.END)
-        self.trigger_autosave()
-
     def on_window_close(self):
         """Persist GUI-only state on close and then exit."""
         self.save_config(silent=True)
@@ -2467,7 +2461,7 @@ class YtDlpGUI:
     
     
     def create_batch_download_tab(self, frame=None):
-        """Create Batch Download tab with a clean, fast multi-line text interface."""
+        """Create Batch Download tab."""
         frame = frame or ttk.Frame(self.notebook, padding='10')
 
         file_row = ttk.Frame(frame)
@@ -2495,66 +2489,137 @@ class YtDlpGUI:
         btn_paste_batch.pack(side=tk.LEFT, padx=(8, 2))
         self.register_translatable_widget(btn_paste_batch, 'Paste')
 
-        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse'), command=self.parse_batch_text)
+        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse All'), command=self.parse_batch_text)
         btn_parse_batch.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_parse_batch, 'Parse')
+        self.register_translatable_widget(btn_parse_batch, 'Parse All')
         
+        # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
         btn_clear.pack(side=tk.RIGHT)
         self.register_translatable_widget(btn_clear, 'Clear Pool')
 
-        self.batch_urls_text = scrolledtext.ScrolledText(frame, height=15, wrap=tk.NONE)
-        self.batch_urls_text.pack(fill=tk.BOTH, expand=True, pady=(5, 0))
-        self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
+        dyn_container = ttk.Frame(frame)
+        dyn_container.pack(fill=tk.BOTH, expand=True)
+        self.bulk_canvas = tk.Canvas(dyn_container, highlightthickness=0)
+        vsb = ttk.Scrollbar(dyn_container, orient='vertical', command=self.bulk_canvas.yview)
+        self.bulk_scroll_frame = ttk.Frame(self.bulk_canvas)
+        self.bulk_scroll_frame.bind(
+            '<Configure>',
+            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+        c_win = self.bulk_canvas.create_window((0, 0), window=self.bulk_scroll_frame, anchor='nw')
+        self.bulk_canvas.bind('<Configure>', lambda e: self.bulk_canvas.itemconfig(c_win, width=e.width))
+        self.bulk_canvas.configure(yscrollcommand=vsb.set)
+        self.bulk_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Controls row removed: Bulk Paste and Parse Batch buttons were intentionally deleted
+        # per user request. Keep dynamic rows and clear button intact.
+        self.bulk_rows = []
         
-        # Load initially if available in pending state
-        if 'batch_urls' in self._pending_gui_state:
-            self._set_text_value(self.batch_urls_text, self._pending_gui_state.pop('batch_urls'))
+        # Restore URLs from config if present
+        bulk_urls = self.config.get('bulk_urls', [])
+        if bulk_urls:
+            self.bulk_scroll_frame.unbind('<Configure>')
+            
+            # Hybrid approach for "Instant" feel:
+            # 1. Load first 40 rows synchronously (instant enough)
+            first_chunk = bulk_urls[:40]
+            remaining = bulk_urls[40:]
+            
+            for url in first_chunk:
+                self.add_bulk_row(url, localize=False, register=False)
+            
+            # Initial layout update
+            self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+            self.bulk_canvas.yview_moveto(0)
+            
+            # 2. Background load the rest if any
+            if remaining:
+                def _bg_load(idx):
+                    chunk_size = 60
+                    end = min(idx + chunk_size, len(remaining))
+                    for i in range(idx, end):
+                        self.add_bulk_row(remaining[i], localize=False, register=False)
+                    
+                    if end < len(remaining):
+                        self.root.after(1, lambda: _bg_load(end))
+                    else:
+                        # Final re-bind and layout
+                        self.bulk_scroll_frame.bind(
+                            '<Configure>',
+                            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+                        self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+
+                self.root.after(10, lambda: _bg_load(0))
+            else:
+                self.bulk_scroll_frame.bind(
+                    '<Configure>',
+                    lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+        else:
+            self.add_bulk_row()
 
         return frame
 
-    def paste_to_batch_text(self):
-        """Unified paste logic: Paste http links from clipboard into the batch text area."""
-        try:
-            content = self.root.clipboard_get().strip()
-        except tk.TclError:
-            content = ''
-
-        if not content:
-            self.log_message(self.tr('Clipboard is empty.'))
-            return
-
-        lines = [l.strip() for l in content.splitlines() if 'http' in l.lower()]
-        if not lines:
-            self.log_message(self.tr('No URLs found in clipboard.'))
-            return
-
-        current_val = self.batch_urls_text.get('1.0', tk.END).strip()
-        joined = '\n'.join(lines)
-        if current_val:
-            self.batch_urls_text.insert(tk.END, '\n' + joined)
+    def add_bulk_row(self, initial_text='', localize=True, register=True):
+        # Use tk.Frame/tk.Entry for maximum performance inside scroll area (avoids themed overhead)
+        row = tk.Frame(self.bulk_scroll_frame)
+        row.pack(fill=tk.X, pady=1)
+        var = tk.StringVar(value=initial_text)
+        var.trace_add('write', self.trigger_autosave)
+        entry = tk.Entry(row, textvariable=var, highlightthickness=1, borderwidth=1)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        
+        # Use localized text immediately 
+        parse_text = self.tr('Parse')
+        btn_parse = ttk.Button(row, text=parse_text, width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
+        btn_parse.pack(side=tk.LEFT, padx=2)
+        
+        if register:
+            self.register_translatable_widget(btn_parse, 'Parse')
+        
+        if len(self.bulk_rows) == 0:
+            btn_add = ttk.Button(row, text='+', width=3, command=self.add_bulk_row)
+            btn_add.pack(side=tk.LEFT)
         else:
-            self.batch_urls_text.insert('1.0', joined)
-            
-        self.batch_urls_text.see(tk.END)
-        self.trigger_autosave()
-        self.log_message(self.tr('Pasted into batch text box.'))
+            btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
+            btn_remove.pack(side=tk.LEFT)
+        self.bulk_rows.append({'frame': row, 'var': var})
+        
+        if localize:
+            self.localize_widget_tree(row)
 
-    def parse_batch_text(self):
-        """Parse all URLs currently in the batch text area."""
-        content = self.batch_urls_text.get('1.0', tk.END).strip()
-        if not content:
-            self.log_message(self.tr('No URLs to parse.'))
-            return
-        
-        urls = [line.strip() for line in content.splitlines() if line.strip()]
-        if not urls:
-            return
-        
-        for url in urls:
-            self._parse_single_row_url(url)
-        
-        self.log_message(self.tr('Parsed {} URLs from batch text box.').replace('{}', str(len(urls))))
+    def remove_bulk_row(self, frame):
+        frame.destroy()
+        self.bulk_rows = [r for r in self.bulk_rows if r['frame'] != frame]
+        if not self.bulk_rows:
+            self.add_bulk_row()
+
+    def remove_batch_row(self, frame):
+        """Compatibility alias for previous function name."""
+        self.remove_bulk_row(frame)
+
+    def paste_bulk_urls_smart(self):
+        """Smartly detect and distribute URLs from clipboard."""
+        try:
+            raw = self.root.clipboard_get()
+            lines = [l.strip() for l in raw.splitlines() if l.strip()]
+            if not lines:
+                return
+            if self.bulk_rows and not self.bulk_rows[0]['var'].get().strip():
+                self.bulk_rows[0]['var'].set(lines[0])
+                lines = lines[1:]
+            for line in lines:
+                self.add_bulk_row(line)
+            self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + 1)))
+        except Exception as e:
+            self.log_message(f'Paste failed: {e}')
+
+    def clear_all_bulk_rows(self):
+        for row in self.bulk_rows[1:]:
+            row['frame'].destroy()
+        if self.bulk_rows:
+            self.bulk_rows = self.bulk_rows[:1]
+            self.bulk_rows[0]['var'].set('')
 
     def _parse_single_row_url(self, url):
         url = (url or '').strip()
@@ -2585,8 +2650,11 @@ class YtDlpGUI:
             except Exception as e:
                 self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
 
-        if hasattr(self, 'batch_urls_text'):
-            urls.extend([l.strip() for l in self.batch_urls_text.get('1.0', tk.END).splitlines() if l.strip()])
+
+        for row in getattr(self, 'bulk_rows', []):
+            value = row['var'].get().strip()
+            if value:
+                urls.append(value)
 
         seen = set()
         normalized = []
@@ -5180,16 +5248,14 @@ class YtDlpGUI:
             elif isinstance(widget, scrolledtext.ScrolledText):
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
 
-        batch_urls = ''
-        if hasattr(self, 'batch_urls_text'):
-            batch_urls = self.batch_urls_text.get('1.0', tk.END).strip()
+        bulk_urls = [row['var'].get().strip() for row in getattr(self, 'bulk_rows', []) if row['var'].get().strip()]
 
         return {
             'config_version': 1,
             'language': self.current_language,
             'language_initialized': True,
             'gui_state': gui_state,
-            'batch_urls': batch_urls,
+            'bulk_urls': bulk_urls,
         }
 
     def apply_config(self):
@@ -5206,12 +5272,17 @@ class YtDlpGUI:
         if hasattr(self, 'language_var'):
             self.language_var.set(self.get_language_display(language))
         
-        # Restore batch URLs
-        batch_urls = self.config.get('batch_urls', '')
-        if batch_urls:
+        # Restore bulk URLs
+        bulk_urls = self.config.get('bulk_urls', [])
+        if bulk_urls:
+            # First ensure create_batch_download_tab was called or build it
             self.ensure_tab_built_by_id('batch')
-            if hasattr(self, 'batch_urls_text'):
-                self._set_text_value(self.batch_urls_text, batch_urls)
+            if hasattr(self, 'bulk_rows'):
+                self.clear_all_bulk_rows()
+                if bulk_urls:
+                    self.bulk_rows[0]['var'].set(bulk_urls[0])
+                    for url in bulk_urls[1:]:
+                        self.add_bulk_row(url)
 
         self.apply_localization()
         self.apply_pending_gui_state()
