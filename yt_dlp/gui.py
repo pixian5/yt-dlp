@@ -2173,8 +2173,11 @@ class YtDlpGUI:
 
     def unload_tab(self, frame):
         """Destroy inactive tab contents while preserving their GUI state."""
-        # EXEMPTION: Never unload the Playlist tab because it contains dynamic list data
-        if frame not in self._built_tabs or (hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame):
+        # EXEMPTION: Never unload tabs containing complex dynamic list data
+        is_playlist = (hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame)
+        is_batch = (hasattr(self, 'batch_tab_frame') and frame == self.batch_tab_frame)
+        
+        if frame not in self._built_tabs or is_playlist or is_batch:
             return
 
         for name in self._tab_controls.get(frame, set()):
@@ -2200,9 +2203,11 @@ class YtDlpGUI:
         previous_frame = self._active_tab_frame
         
         if previous_frame is not None and previous_frame != frame:
-            # EXEMPTION: Never unload the Playlist tab
+            # EXEMPTION: Never unload tabs with dynamic list data
             is_playlist = (hasattr(self, 'playlist_tab_frame') and previous_frame == self.playlist_tab_frame)
-            if not is_playlist:
+            is_batch = (hasattr(self, 'batch_tab_frame') and previous_frame == self.batch_tab_frame)
+            
+            if not is_playlist and not is_batch:
                 self.unload_tab(previous_frame)
                 
         self.ensure_tab_built(frame)
@@ -2393,7 +2398,7 @@ class YtDlpGUI:
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
         # Register tabs for lazy creation
-        batch_frame = self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
+        self.batch_tab_frame = self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
 
         # Insert Playlist tab so it appears before the General tab
         self.playlist_tab_frame = self.create_playlist_tab()
@@ -2423,8 +2428,8 @@ class YtDlpGUI:
         self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
         self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
         
-        self.ensure_tab_built(batch_frame)
-        self._active_tab_frame = batch_frame
+        self.ensure_tab_built(self.batch_tab_frame)
+        self._active_tab_frame = self.batch_tab_frame
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
@@ -2510,7 +2515,14 @@ class YtDlpGUI:
         # Controls row removed: Bulk Paste and Parse Batch buttons were intentionally deleted
         # per user request. Keep dynamic rows and clear button intact.
         self.bulk_rows = []
-        self.add_bulk_row()
+        
+        # Restore URLs from config if present
+        bulk_urls = self.config.get('bulk_urls', [])
+        if bulk_urls:
+            for url in bulk_urls:
+                self.add_bulk_row(url)
+        else:
+            self.add_bulk_row()
 
         return frame
 
