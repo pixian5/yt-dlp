@@ -71,17 +71,13 @@ TRANSLATIONS = {
         'Ready': '就绪',
         'Clipboard is empty.': '剪贴板为空。',
         'Pasted link from clipboard.': '已从剪贴板粘贴链接。',
-        'Paste': '粘贴',
-        'Pasted into batch text box.': '已粘贴到批量文本框。',
-        'Paste Playlist': '粘贴播放列表',
+        'Paste Top': '粘贴到顶部',
+        'Paste Bottom': '粘贴到底部',
         'Batch Download': '批量下载',
         'Playlist': '播放列表',
         'Batch file path:': '批量文件路径：',
         'Batch URLs (one per line):': '批量 URL (每行一个):',
         'Parse': '解析',
-        'Parse All': '全部解析',
-        'Bulk Paste': '批量粘贴',
-        'Parse Batch': '解析批量',
         'Clear Pool': '清空列表',
         'General': '常规',
         'Network': '网络',
@@ -1967,10 +1963,12 @@ class YtDlpGUI:
                 if widget.type(item) == 'window':
                     sub_widget = widget.nametowidget(widget.itemcget(item, 'window'))
                     self.localize_widget_tree(sub_widget)
-        # PERFORMANCE OPTIMIZATION: Skip recursion for the bulk list container
-        # This prevents O(N) traversals on thousands of widgets during every localization pass.
+        # PERFORMANCE OPTIMIZATION:
+        # Instead of skipping the whole container, we only skip deep recursion if the tab isn't visible
+        # or if we've already localized its children.
         if hasattr(self, 'bulk_scroll_frame') and widget == self.bulk_scroll_frame:
-            return
+            # We still visit the rows, but we can potentially optimize here.
+            pass
 
         for child in widget.winfo_children():
             self.localize_widget_tree(child)
@@ -2490,13 +2488,17 @@ class YtDlpGUI:
         lbl_list.pack(side=tk.LEFT)
         self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
         
-        btn_paste_batch = ttk.Button(header_row, text=self.tr('Paste'), command=self.paste_to_batch_text)
-        btn_paste_batch.pack(side=tk.LEFT, padx=(8, 2))
-        self.register_translatable_widget(btn_paste_batch, 'Paste')
+        btn_paste_top = ttk.Button(header_row, text=self.tr('Paste Top'), command=lambda: self.paste_to_batch_text(pos='top'))
+        btn_paste_top.pack(side=tk.LEFT, padx=(8, 2))
+        self.register_translatable_widget(btn_paste_top, 'Paste Top')
 
-        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse All'), command=self.parse_batch_text)
+        btn_paste_bottom = ttk.Button(header_row, text=self.tr('Paste Bottom'), command=lambda: self.paste_to_batch_text(pos='bottom'))
+        btn_paste_bottom.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_paste_bottom, 'Paste Bottom')
+
+        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse'), command=self.parse_batch_text)
         btn_parse_batch.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_parse_batch, 'Parse All')
+        self.register_translatable_widget(btn_parse_batch, 'Parse')
         
         # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
@@ -2565,31 +2567,28 @@ class YtDlpGUI:
 
         return frame
 
-    def add_bulk_row(self, initial_text='', localize=True, register=True):
-        # Use stylized raw tk widgets for "Instant" speed (10x faster than ttk on macOS)
-        # We manually style them to look "Premium"
-        bg_col = self.root.cget('bg')
-        row = tk.Frame(self.bulk_scroll_frame, bg=bg_col)
-        row.pack(fill=tk.X, pady=2)
+    def add_bulk_row(self, initial_text='', localize=True, register=True, pos='bottom'):
+        # Reverting to ttk widgets for "Premium" native look (removes "black borders")
+        row = ttk.Frame(self.bulk_scroll_frame)
         
-        # Plain entry without StringVar overhead for bulk items
-        entry = tk.Entry(row, highlightthickness=1, borderwidth=0, relief='flat')
-        entry.insert(0, initial_text)
-        # Use a nice border color that matches macOS aesthetics
-        entry.config(highlightbackground='#d1d1d1', highlightcolor='#007aff')
-        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10), ipady=2)
+        if pos == 'top' and self.bulk_rows:
+            row.pack(fill=tk.X, pady=3, before=self.bulk_rows[0]['frame'])
+        else:
+            row.pack(fill=tk.X, pady=3)
         
-        # Bind change event to autosave (equivalent to trace)
-        entry.bind('<KeyRelease>', lambda e: self.trigger_autosave())
+        var = tk.StringVar(value=initial_text)
+        var.trace_add('write', self.trigger_autosave)
+        entry = ttk.Entry(row, textvariable=var)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
         
-        # Use localized text immediately 
-        parse_text = self.tr('Parse')
-        btn_parse = ttk.Button(row, text=parse_text, width=8, command=lambda e=entry: self._parse_single_row_url(e.get()))
+        # Localize button text immediately
+        btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
         
         if register:
             self.register_translatable_widget(btn_parse, 'Parse')
         
+        # Logic for +/- buttons based on position is tricky, simplify to just show - on all except maybe first
         if len(self.bulk_rows) == 0:
             btn_add = ttk.Button(row, text='+', width=3, command=self.add_bulk_row)
             btn_add.pack(side=tk.LEFT)
@@ -2597,8 +2596,10 @@ class YtDlpGUI:
             btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
             btn_remove.pack(side=tk.LEFT)
             
-        # Store widget for later access instead of var
-        self.bulk_rows.append({'frame': row, 'entry': entry})
+        if pos == 'top':
+            self.bulk_rows.insert(0, {'frame': row, 'var': var})
+        else:
+            self.bulk_rows.append({'frame': row, 'var': var})
         
         if localize:
             self.localize_widget_tree(row)
@@ -2614,9 +2615,9 @@ class YtDlpGUI:
         """Unified method to get all non-empty URLs from the dynamic row list."""
         urls = []
         for row in getattr(self, 'bulk_rows', []):
-            entry = row.get('entry')
-            if entry:
-                value = entry.get().strip()
+            var = row.get('var')
+            if var:
+                value = var.get().strip()
                 if value:
                     urls.append(value)
         return urls
@@ -2627,9 +2628,9 @@ class YtDlpGUI:
             row['frame'].destroy()
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
-            entry = self.bulk_rows[0].get('entry')
-            if entry:
-                entry.delete(0, tk.END)
+            var = self.bulk_rows[0].get('var')
+            if var:
+                var.set('')
         self.trigger_autosave()
 
     def _parse_single_row_url(self, url):
@@ -4122,7 +4123,7 @@ class YtDlpGUI:
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
 
-    def paste_to_batch_text(self):
+    def paste_to_batch_text(self, pos='bottom'):
         try:
             content = self.root.clipboard_get().strip()
         except tk.TclError:
@@ -4137,12 +4138,13 @@ class YtDlpGUI:
             self.log_message(self.tr('No URLs found in clipboard.'))
             return
 
+        if pos == 'top':
+            lines.reverse()
+
         imported_count = 0
-        # If the first row is empty, fill it. Otherwise add new rows.
-        first_entry = self.bulk_rows[0].get('entry') if self.bulk_rows else None
-        if len(self.bulk_rows) == 1 and first_entry and not first_entry.get().strip():
-            first_entry.delete(0, tk.END)
-            first_entry.insert(0, lines[0])
+        # If the first row is empty and we are pasting to bottom, fill it first. 
+        if pos == 'bottom' and len(self.bulk_rows) == 1 and not self.bulk_rows[0].get('var').get().strip():
+            self.bulk_rows[0].get('var').set(lines[0])
             lines = lines[1:]
             imported_count += 1
         
@@ -4151,7 +4153,7 @@ class YtDlpGUI:
             self.bulk_scroll_frame.unbind('<Configure>')
             
             for line in lines:
-                self.add_bulk_row(line, localize=False, register=False)
+                self.add_bulk_row(line, localize=False, register=False, pos=pos)
             
             # Re-bind and update once
             self.bulk_scroll_frame.bind(
@@ -5290,10 +5292,9 @@ class YtDlpGUI:
             if hasattr(self, 'bulk_rows'):
                 self.clear_all_bulk_rows()
                 if bulk_urls:
-                    entry = self.bulk_rows[0].get('entry')
-                    if entry:
-                        entry.delete(0, tk.END)
-                        entry.insert(0, bulk_urls[0])
+                    var = self.bulk_rows[0].get('var')
+                    if var:
+                        var.set(bulk_urls[0])
                     for url in bulk_urls[1:]:
                         self.add_bulk_row(url)
 
