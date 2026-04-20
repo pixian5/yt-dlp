@@ -338,6 +338,25 @@ TRANSLATIONS = {
         "Deselect All": "取消全选",
         "Invert Select": "反选",
         "720p 60fps": "720p 60帧",
+        "All tasks processed.": "所有任务处理完成。",
+        "Stopping download...": "正在停止下载...",
+        "No download currently running.": "当前没有正在运行的下载。",
+        "Cleaning up partial files...": "正在清理临时文件...",
+        "Cleanup finished. Removed {} files.": "清理完成。删除了 {} 个文件。",
+        "Error during cleanup: {}": "清理过程中出错：{}",
+        "Not a playlist or no entries found.": "不是播放列表，或者未发现有效项目。",
+        "Failed to parse playlist.": "解析播放列表失败。",
+        "Error checking playlist: ": "检查播放列表出错：",
+        "No valid batch URLs found.": "未找到有效的批量 URL。",
+        "Batch parsed: {} URL(s) ready.": "批量解析完成：{} 条 URL 已就绪。",
+        "Parsed {} URLs from batch list.": "从批量列表中解析了 {} 条 URL。",
+        "Error reading batch file: ": "读取批量文件错误：",
+        "Error creating temporary batch file: {}": "创建临时批量文件失败：{}",
+        "Task failed with code ": "任务失败，状态码 ",
+        "ERROR in runner: ": "解析器错误：",
+        "Failed to save configuration: ": "保存配置失败：",
+        "Hint: JavaScript environment is missing.": "提示：检测到 JavaScript 运行环境缺失。",
+        "Please run 'brew install node' in terminal to fix this download error.": "请在终端运行 'brew install node' 以修复此下载报错。",
     },
     'ru': {
         "Extract audio (--extract-audio)": "Извлечь аудио (--extract-audio)",
@@ -531,6 +550,25 @@ TRANSLATIONS = {
         "Deselect All": "Снять все",
         "Invert Select": "Инвертировать",
         "720p 60fps": "720p 60к/с",
+        "All tasks processed.": "Все задачи завершены.",
+        "Stopping download...": "Остановка загрузки...",
+        "No download currently running.": "Загрузка не запущена.",
+        "Cleaning up partial files...": "Очистка временных файлов...",
+        "Cleanup finished. Removed {} files.": "Очистка завершена. Удалено {} файлов.",
+        "Error during cleanup: {}": "Ошибка при очистке: {}",
+        "Not a playlist or no entries found.": "Это не плейлист или элементы не найдены.",
+        "Failed to parse playlist.": "Не удалось разобрать плейлист.",
+        "Error checking playlist: ": "Ошибка при проверке плейлиста: ",
+        "No valid batch URLs found.": "Действительные ссылки не найдены.",
+        "Batch parsed: {} URL(s) ready.": "Пакет разобран: {} ссылок готово.",
+        "Parsed {} URLs from batch list.": "Разобрано {} ссылок из списка.",
+        "Error reading batch file: ": "Ошибка чтения файла: ",
+        "Error creating temporary batch file: {}": "Ошибка создания временного файла: {}",
+        "Task failed with code ": "Задача завершилась с кодом ",
+        "ERROR in runner: ": "ОШИБКА в раннере: ",
+        "Failed to save configuration: ": "Не удалось сохранить конфиг: ",
+        "Hint: JavaScript environment is missing.": "Подсказка: Отсутствует среда JavaScript.",
+        "Please run 'brew install node' in terminal to fix this download error.": "Выполните 'brew install node' для устранения ошибки.",
     },
     'ja': {
         "Extract audio (--extract-audio)": "音声のみ抽出 (--extract-audio)",
@@ -719,6 +757,25 @@ TRANSLATIONS = {
         "Deselect All": "すべて解除",
         "Invert Select": "選択反転",
         "720p 60fps": "720p 60fps",
+        "All tasks processed.": "すべてのタスクが完了しました。",
+        "Stopping download...": "ダウンロードを停止しています...",
+        "No download currently running.": "実行中のダウンロードはありません。",
+        "Cleaning up partial files...": "一時ファイルをクリーンアップしています...",
+        "Cleanup finished. Removed {} files.": "クリーンアップ完了。{} 個のファイルを削除しました。",
+        "Error during cleanup: {}": "クリーンアップ中にエラーが発生しました: {}",
+        "Not a playlist or no entries found.": "プレイリストではないか、項目が見つかりませんでした。",
+        "Failed to parse playlist.": "プレイリストの解析に失敗しました。",
+        "Error checking playlist: ": "プレイリストの確認エラー: ",
+        "No valid batch URLs found.": "有効な一括 URL が見つかりませんでした。",
+        "Batch parsed: {} URL(s) ready.": "一括解析完了: {} 件準備完了。",
+        "Parsed {} URLs from batch list.": "リストから {} 件の URL を解析しました。",
+        "Error reading batch file: ": "一括ファイルの読み込みエラー: ",
+        "Error creating temporary batch file: {}": "一時バッチファイルの作成エラー: {}",
+        "Task failed with code ": "タスクが失敗しました。コード: ",
+        "ERROR in runner: ": "実行エラー: ",
+        "Failed to save configuration: ": "設定の保存に失敗しました: ",
+        "Hint: JavaScript environment is missing.": "ヒント: JavaScript 実行環境が不足しています。",
+        "Please run 'brew install node' in terminal to fix this download error.": "このエラーを解決するには、ターミナルで 'brew install node' を実行してください。",
     },
     'ko': {
         "Extract audio (--extract-audio)": "오디오만 추출 (--extract-audio)",
@@ -872,11 +929,29 @@ TRANSLATIONS = {
         "interaction": "상호작용",
         "music_offtopic": "음악: 주제와 상관없는 부분",
         "poi_highlight": "하이라이트",
-        "chapter": "챕터",
-        "Select All": "모두 선택",
         "Deselect All": "모두 해제",
         "Invert Select": "선택 반전",
         "720p 60fps": "720p 60fps",
+        "All tasks processed.": "모든 작업이 처리되었습니다.",
+        "Stopping download...": "다운로드 중지 중...",
+        "No download currently running.": "현재 실행 중인 다운로드가 없습니다.",
+        "Cleaning up partial files...": "임시 파일 정리 중...",
+        "Cleanup finished. Removed {} files.": "정리 완료. {}개의 파일을 삭제했습니다.",
+        "Error during cleanup: {}": "정리 중 오류 발생: {}",
+        "Not a playlist or no entries found.": "재생목록이 아니거나 항목을 찾을 수 없습니다.",
+        "Failed to parse playlist.": "재생목록 분석 실패.",
+        "Error checking playlist: ": "재생목록 확인 중 오류: ",
+        "No valid batch URLs found.": "유효한 배치 URL을 찾을 수 없습니다.",
+        "Batch parsed: {} URL(s) ready.": "배치 분석 완료: {}개의 URL 준비됨.",
+        "Parsed {} URLs from batch list.": "배치 목록에서 {}개의 URL을 분석했습니다.",
+        "Error reading batch file: ": "배치 파일 읽기 오류: ",
+        "Error creating temporary batch file: {}": "임시 배치 파일 생성 오류: {}",
+        "Task failed with code ": "작업 실패, 코드: ",
+        "ERROR in runner: ": "실행기 오류: ",
+        "Failed to save configuration: ": "설정 저장 실패: ",
+        "Imported {} URLs into pool.": "{}개의 URL을 목록에 가져왔습니다.",
+        "Hint: JavaScript environment is missing.": "힌트: JavaScript 실행 환경이 없습니다.",
+        "Please run 'brew install node' in terminal to fix this download error.": "이 오류를 해결하려면 터미널에서 'brew install node'를 실행하십시오.",
     },
     'es': {
         "Extract audio (--extract-audio)": "Extraer audio (--extract-audio)",
@@ -1135,6 +1210,26 @@ TRANSLATIONS = {
         "Select All": "Seleccionar todo",
         "Deselect All": "Deseleccionar todo",
         "Invert Select": "Invertir selección",
+        "All tasks processed.": "Todas las tareas procesadas.",
+        "Stopping download...": "Deteniendo descarga...",
+        "No download currently running.": "No hay descargas en curso.",
+        "Cleaning up partial files...": "Limpiando archivos temporales...",
+        "Cleanup finished. Removed {} files.": "Limpieza finalizada. Eliminados {} archivos.",
+        "Error during cleanup: {}": "Error durante la limpieza: {}",
+        "Not a playlist or no entries found.": "No es una lista de reproducción o no se encontraron entradas.",
+        "Failed to parse playlist.": "Error al analizar la lista de reproducción.",
+        "Error checking playlist: ": "Error al comprobar la lista de reproducción: ",
+        "No valid batch URLs found.": "No se encontraron URLs válidas.",
+        "Batch parsed: {} URL(s) ready.": "Lote analizado: {} URLs listas.",
+        "Parsed {} URLs from batch list.": "Analizadas {} URLs de la lista.",
+        "Error reading batch file: ": "Error al leer el archivo de lote: ",
+        "Error creating temporary batch file: {}": "Error al crear archivo de lote temporal: {}",
+        "Task failed with code ": "Tarea fallida con código ",
+        "ERROR in runner: ": "ERROR en el ejecutor: ",
+        "Failed to save configuration: ": "Error al guardar la configuración: ",
+        "Imported {} URLs into pool.": "Importadas {} URLs a la lista.",
+        "Hint: JavaScript environment is missing.": "Sugerencia: Falta el entorno JavaScript.",
+        "Please run 'brew install node' in terminal to fix this download error.": "Ejecute 'brew install node' para corregir este error.",
     },
     'fr': {
         "Extract audio (--extract-audio)": "Extraire l'audio (--extract-audio)",
@@ -1407,6 +1502,26 @@ TRANSLATIONS = {
         "Invert Select": "Inverser la sélection",
         "Allow dynamic MPD manifests (--allow-dynamic-mpd)": "Autoriser les manifestes MPD dynamiques (--allow-dynamic-mpd)",
         "Ignore dynamic MPD manifests (--ignore-dynamic-mpd)": "Ignorer les manifestes MPD dynamiques (--ignore-dynamic-mpd)",
+        "All tasks processed.": "Toutes les tâches ont été traitées.",
+        "Stopping download...": "Arrêt du téléchargement...",
+        "No download currently running.": "Aucun téléchargement en cours.",
+        "Cleaning up partial files...": "Nettoyage des fichiers temporaires...",
+        "Cleanup finished. Removed {} files.": "Nettoyage terminé. {} fichiers supprimés.",
+        "Error during cleanup: {}": "Erreur lors du nettoyage : {}",
+        "Not a playlist or no entries found.": "Pas une liste de lecture ou aucune entrée trouvée.",
+        "Failed to parse playlist.": "Échec de l'analyse de la liste de lecture.",
+        "Error checking playlist: ": "Erreur lors de la vérification de la liste : ",
+        "No valid batch URLs found.": "Aucune URL valide trouvée.",
+        "Batch parsed: {} URL(s) ready.": "Lot analysé : {} URL(s) prêtes.",
+        "Parsed {} URLs from batch list.": "{} URL(s) analysées depuis la liste.",
+        "Error reading batch file: ": "Erreur de lecture du fichier : ",
+        "Error creating temporary batch file: {}": "Erreur lors de la création du fichier temporaire : {}",
+        "Task failed with code ": "Tâche échouée avec le code ",
+        "ERROR in runner: ": "ERREUR dans l'exécuteur : ",
+        "Failed to save configuration: ": "Échec de sauvegarde de la config : ",
+        "Imported {} URLs into pool.": "{} URL(s) importées dans la liste.",
+        "Hint: JavaScript environment is missing.": "Conseil : L'environnement JavaScript est manquant.",
+        "Please run 'brew install node' in terminal to fix this download error.": "Exécutez 'brew install node' pour corriger cette erreur.",
     },
     'de': {
         'Language:': 'Sprache:',
@@ -2560,8 +2675,8 @@ class YtDlpGUI:
                 self.root.after(10, lambda: _bg_load(0))
             else:
                 self.bulk_scroll_frame.bind(
-                    '<Configure>',
-                    lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+                            '<Configure>',
+                            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
         else:
             self.add_bulk_row()
 
@@ -2660,7 +2775,7 @@ class YtDlpGUI:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     urls.extend([line.strip() for line in f if line.strip() and not line.strip().startswith('#')])
             except Exception as e:
-                self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
+                self.log_message(self.translate_concat(self.tr('Error reading batch file: '), str(e)))
 
 
         for url in self.get_bulk_urls():
@@ -2675,14 +2790,14 @@ class YtDlpGUI:
                 normalized.append(url)
 
         if not normalized:
-            self.log_message('No valid batch URLs found.')
+            self.log_message(self.tr('No valid batch URLs found.'))
             self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
             return
 
         content = '\n'.join(normalized)
         self.root.after(0, lambda: self.batch_file_entry.delete(0, tk.END))
         self.root.after(0, lambda: self.batch_file_entry.insert(0, content))
-        self.log_message(f'Batch parsed: {len(normalized)} URL(s) ready.')
+        self.log_message(self.tr('Batch parsed: {} URL(s) ready.').replace('{}', str(len(normalized))))
         self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
     
     def create_playlist_tab(self, frame=None):
@@ -4175,7 +4290,7 @@ class YtDlpGUI:
         for url in urls:
             self._parse_single_row_url(url)
         
-        self.log_message(f'Parsed {len(urls)} URLs from batch pool.')
+        self.log_message(self.tr('Parsed {} URLs from batch list.').replace('{}', str(len(urls))))
 
     def paste_playlist_from_clipboard(self):
         try:
@@ -4776,7 +4891,7 @@ class YtDlpGUI:
                         atexit.register(self._cleanup_temp_files)
                     self._temp_batch_files.append(temp_path)
                 except Exception as e:
-                    self.log_message(f'Error creating temporary batch file: {e}')
+                    self.log_message(self.tr('Error creating temporary batch file: {}').replace('{}', str(e)))
                     args.extend(['-a', batch_file]) # Fallback
             else:
                 args.extend(['-a', batch_file])
@@ -4812,7 +4927,7 @@ class YtDlpGUI:
         cmd_text = self.generated_cmd.get('1.0', tk.END).strip()
         self.root.clipboard_clear()
         self.root.clipboard_append(cmd_text)
-        self.log_message('Command copied to clipboard!')
+        self.log_message(self.tr('Command copied to clipboard!'))
 
     def run_ytdlp(self, tasks):
         """Run a list of yt-dlp tasks (args sets) sequentially"""
@@ -4844,8 +4959,8 @@ class YtDlpGUI:
                 if process.returncode != 0 and process.returncode not in (15, -15):
                     self.log_message(self.translate_concat('Task failed with code ', process.returncode))
                     if "n challenge solving failed" in "".join(self.console.get("1.0", tk.END)):
-                        self.log_message("\n[!] 提示：检测到 JavaScript 运行环境缺失。")
-                        self.log_message("[!] 请在终端运行 'brew install node' 以修复此下载报错。")
+                        self.log_message("\n[!] " + self.tr('Hint: JavaScript environment is missing.'))
+                        self.log_message("[!] " + self.tr("Please run 'brew install node' in terminal to fix this download error."))
                     # We continue even if one fails
                 
                 if not hasattr(self, 'current_process') or self.current_process is None:
@@ -4915,8 +5030,9 @@ class YtDlpGUI:
                         except Exception as e:
                             self.log_message(f"Failed to remove {filename}: {e}")
             self.log_message(f"Cleanup finished. Removed {count} files.")
+            self.log_message(self.tr('Cleanup finished. Removed {} files.').replace('{}', str(count)))
         except Exception as e:
-            self.log_message(f"Error during cleanup: {e}")
+            self.log_message(self.tr('Error during cleanup: {}').replace('{}', str(e)))
 
     def start_download(self):
         """Start download in a separate thread"""
