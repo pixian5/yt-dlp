@@ -2561,13 +2561,13 @@ class YtDlpGUI:
         return frame
 
     def add_bulk_row(self, initial_text='', localize=True, register=True):
-        # Use tk.Frame/tk.Entry for maximum performance inside scroll area (avoids themed overhead)
-        row = tk.Frame(self.bulk_scroll_frame)
-        row.pack(fill=tk.X, pady=1)
+        # Use ttk widgets for better "Premium" aesthetics while maintaining high-performance creation
+        row = ttk.Frame(self.bulk_scroll_frame)
+        row.pack(fill=tk.X, pady=3)
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
-        entry = tk.Entry(row, textvariable=var, highlightthickness=1, borderwidth=1)
-        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        entry = ttk.Entry(row, textvariable=var)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
         
         # Use localized text immediately 
         parse_text = self.tr('Parse')
