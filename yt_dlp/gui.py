@@ -2519,14 +2519,27 @@ class YtDlpGUI:
         # Restore URLs from config if present
         bulk_urls = self.config.get('bulk_urls', [])
         if bulk_urls:
-            for url in bulk_urls:
-                self.add_bulk_row(url)
+            # Chunked loading to prevent long UI freeze
+            def _chunked_load(start_idx):
+                chunk_size = 25
+                end_idx = min(start_idx + chunk_size, len(bulk_urls))
+                for i in range(start_idx, end_idx):
+                    self.add_bulk_row(bulk_urls[i], localize=False)
+                
+                if end_idx < len(bulk_urls):
+                    self.root.after(1, lambda: _chunked_load(end_idx))
+                else:
+                    self.localize_widget_tree(self.bulk_scroll_frame)
+                    # Force one scroll update
+                    self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+
+            _chunked_load(0)
         else:
             self.add_bulk_row()
 
         return frame
 
-    def add_bulk_row(self, initial_text=''):
+    def add_bulk_row(self, initial_text='', localize=True):
         row = ttk.Frame(self.bulk_scroll_frame)
         row.pack(fill=tk.X, pady=2)
         var = tk.StringVar(value=initial_text)
@@ -2547,8 +2560,9 @@ class YtDlpGUI:
             btn_remove.pack(side=tk.LEFT)
         self.bulk_rows.append({'frame': row, 'var': var})
         
-        # Immediate sync for this newly added row
-        self.localize_widget_tree(row)
+        # Immediate sync for this newly added row if not in bulk load
+        if localize:
+            self.localize_widget_tree(row)
 
     def remove_bulk_row(self, frame):
         frame.destroy()
@@ -4096,12 +4110,24 @@ class YtDlpGUI:
             lines = lines[1:]
             imported_count += 1
         
-        for line in lines:
-            self.add_bulk_row(line)
-            imported_count += 1
-        
-        self.trigger_autosave()
-        self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(imported_count)))
+        def _chunked_paste(l_idx):
+            chunk = 20
+            end = min(l_idx + chunk, len(lines))
+            for i in range(l_idx, end):
+                self.add_bulk_row(lines[i], localize=False)
+            
+            if end < len(lines):
+                self.root.after(1, lambda: _chunked_paste(end))
+            else:
+                self.localize_widget_tree(self.bulk_scroll_frame)
+                self.trigger_autosave()
+                self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + imported_count)))
+
+        if lines:
+            _chunked_paste(0)
+        else:
+            self.trigger_autosave()
+            self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(imported_count)))
 
     def parse_batch_text(self):
         """Parse all URLs in the pool bulk rows."""
