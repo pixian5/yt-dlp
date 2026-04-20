@@ -2519,37 +2519,57 @@ class YtDlpGUI:
         # Restore URLs from config if present
         bulk_urls = self.config.get('bulk_urls', [])
         if bulk_urls:
-            # PERFORMANCE OPTIMIZATION:
-            # 1. Temporarily unbind the Configure event to prevent O(N^2) layout recalculations
             self.bulk_scroll_frame.unbind('<Configure>')
             
-            # 2. Synchronous but optimized creation
-            for url in bulk_urls:
+            # Hybrid approach for "Instant" feel:
+            # 1. Load first 40 rows synchronously (instant enough)
+            first_chunk = bulk_urls[:40]
+            remaining = bulk_urls[40:]
+            
+            for url in first_chunk:
                 self.add_bulk_row(url, localize=False, register=False)
             
-            # 3. Final single layout pass
-            self.bulk_scroll_frame.bind(
-                '<Configure>',
-                lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
-            
+            # Initial layout update
             self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-            self.localize_widget_tree(self.bulk_scroll_frame)
             self.bulk_canvas.yview_moveto(0)
+            
+            # 2. Background load the rest if any
+            if remaining:
+                def _bg_load(idx):
+                    chunk_size = 60
+                    end = min(idx + chunk_size, len(remaining))
+                    for i in range(idx, end):
+                        self.add_bulk_row(remaining[i], localize=False, register=False)
+                    
+                    if end < len(remaining):
+                        self.root.after(1, lambda: _bg_load(end))
+                    else:
+                        # Final re-bind and layout
+                        self.bulk_scroll_frame.bind(
+                            '<Configure>',
+                            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+                        self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+
+                self.root.after(10, lambda: _bg_load(0))
+            else:
+                self.bulk_scroll_frame.bind(
+                    '<Configure>',
+                    lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
         else:
             self.add_bulk_row()
 
         return frame
 
     def add_bulk_row(self, initial_text='', localize=True, register=True):
-        row = ttk.Frame(self.bulk_scroll_frame)
-        row.pack(fill=tk.X, pady=2)
+        # Use tk.Frame/tk.Entry for maximum performance inside scroll area (avoids themed overhead)
+        row = tk.Frame(self.bulk_scroll_frame)
+        row.pack(fill=tk.X, pady=1)
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
-        entry = ttk.Entry(row, textvariable=var)
+        entry = tk.Entry(row, textvariable=var, highlightthickness=1, borderwidth=1)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
-        # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
-        # Use localized text immediately to avoid the need for a separate localization pass during bulk load
+        # Use localized text immediately 
         parse_text = self.tr('Parse')
         btn_parse = ttk.Button(row, text=parse_text, width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
@@ -2565,7 +2585,6 @@ class YtDlpGUI:
             btn_remove.pack(side=tk.LEFT)
         self.bulk_rows.append({'frame': row, 'var': var})
         
-        # Immediate sync for this newly added row if not in bulk load
         if localize:
             self.localize_widget_tree(row)
 
@@ -4127,7 +4146,6 @@ class YtDlpGUI:
                 '<Configure>',
                 lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
             
-            self.localize_widget_tree(self.bulk_scroll_frame)
             self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
             
         self.trigger_autosave()
