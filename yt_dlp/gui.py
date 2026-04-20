@@ -2519,21 +2519,22 @@ class YtDlpGUI:
         # Restore URLs from config if present
         bulk_urls = self.config.get('bulk_urls', [])
         if bulk_urls:
-            # Chunked loading to prevent long UI freeze
-            def _chunked_load(start_idx):
-                chunk_size = 100
-                end_idx = min(start_idx + chunk_size, len(bulk_urls))
-                for i in range(start_idx, end_idx):
-                    self.add_bulk_row(bulk_urls[i], localize=False, register=False)
-                
-                if end_idx < len(bulk_urls):
-                    self.root.after(1, lambda: _chunked_load(end_idx))
-                else:
-                    # Final layout and visibility update
-                    self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-                    self.bulk_canvas.yview_moveto(0)
-
-            _chunked_load(0)
+            # PERFORMANCE OPTIMIZATION:
+            # 1. Temporarily unbind the Configure event to prevent O(N^2) layout recalculations
+            self.bulk_scroll_frame.unbind('<Configure>')
+            
+            # 2. Synchronous but optimized creation
+            for url in bulk_urls:
+                self.add_bulk_row(url, localize=False, register=False)
+            
+            # 3. Final single layout pass
+            self.bulk_scroll_frame.bind(
+                '<Configure>',
+                lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+            
+            self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+            self.localize_widget_tree(self.bulk_scroll_frame)
+            self.bulk_canvas.yview_moveto(0)
         else:
             self.add_bulk_row()
 
@@ -4114,25 +4115,23 @@ class YtDlpGUI:
             lines = lines[1:]
             imported_count += 1
         
-        def _chunked_paste(l_idx):
-            chunk = 100
-            end = min(l_idx + chunk, len(lines))
-            for i in range(l_idx, end):
-                self.add_bulk_row(lines[i], localize=False, register=False)
-            
-            if end < len(lines):
-                self.root.after(1, lambda: _chunked_paste(end))
-            else:
-                self.trigger_autosave()
-                self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + imported_count)))
-                # Layout update at the very end
-                self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-
         if lines:
-            _chunked_paste(0)
-        else:
-            self.trigger_autosave()
-            self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(imported_count)))
+            # PERFORMANCE OPTIMIZATION: Unbind during bulk paste
+            self.bulk_scroll_frame.unbind('<Configure>')
+            
+            for line in lines:
+                self.add_bulk_row(line, localize=False, register=False)
+            
+            # Re-bind and update once
+            self.bulk_scroll_frame.bind(
+                '<Configure>',
+                lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
+            
+            self.localize_widget_tree(self.bulk_scroll_frame)
+            self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
+            
+        self.trigger_autosave()
+        self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + imported_count)))
 
     def parse_batch_text(self):
         """Parse all URLs in the pool bulk rows."""
