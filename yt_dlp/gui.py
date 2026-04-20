@@ -1758,7 +1758,6 @@ class YtDlpGUI:
         self.batch_file_var = tk.StringVar()
         self.reverse_order = tk.BooleanVar(value=False)
         self.exclude_private = tk.BooleanVar(value=True)
-        self.batch_urls_text = None
         self.bulk_rows = []
         
         # Language selection variable with trace
@@ -2470,10 +2469,7 @@ class YtDlpGUI:
         btn_browse.pack(side=tk.LEFT)
         self.register_translatable_widget(btn_browse, 'Browse...')
 
-        list_row = ttk.Frame(frame)
-        list_row.pack(fill=tk.BOTH, expand=False, pady=(0, 8))
-        
-        header_row = ttk.Frame(list_row)
+        header_row = ttk.Frame(frame)
         header_row.pack(fill=tk.X, pady=(0, 5))
         
         lbl_list = ttk.Label(header_row, text=self.tr('Batch URLs (one per line):'))
@@ -2492,12 +2488,6 @@ class YtDlpGUI:
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
         btn_clear.pack(side=tk.RIGHT)
         self.register_translatable_widget(btn_clear, 'Clear Pool')
-        
-        self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
-        self.batch_urls_text.pack(fill=tk.X, expand=True)
-        self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
-
-        # NOTE: Controls row for paste/parse will be placed after the dynamic rows
 
         dyn_container = ttk.Frame(frame)
         dyn_container.pack(fill=tk.BOTH, expand=True)
@@ -2576,8 +2566,6 @@ class YtDlpGUI:
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
             self.bulk_rows[0]['var'].set('')
-        if hasattr(self, 'batch_urls_text'):
-            self.batch_urls_text.delete('1.0', tk.END)
 
     def _parse_single_row_url(self, url):
         url = (url or '').strip()
@@ -2608,9 +2596,6 @@ class YtDlpGUI:
             except Exception as e:
                 self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
 
-        if hasattr(self, 'batch_urls_text'):
-            text_urls = [line.strip() for line in self.batch_urls_text.get('1.0', tk.END).splitlines() if line.strip()]
-            urls.extend(text_urls)
 
         for row in getattr(self, 'bulk_rows', []):
             value = row['var'].get().strip()
@@ -4083,29 +4068,38 @@ class YtDlpGUI:
             self.log_message(self.tr('Clipboard is empty.'))
             return
 
-        self.batch_urls_text.insert(tk.END, content + '\n')
-        self.batch_urls_text.see(tk.END)
+        lines = [l.strip() for l in content.splitlines() if 'http' in l.lower()]
+        if not lines:
+            self.log_message(self.tr('No URLs found in clipboard.'))
+            return
+
+        imported_count = 0
+        # If the first row is empty, fill it. Otherwise add new rows.
+        if len(self.bulk_rows) == 1 and not self.bulk_rows[0]['var'].get().strip():
+            self.bulk_rows[0]['var'].set(lines[0])
+            lines = lines[1:]
+            imported_count += 1
+        
+        for line in lines:
+            self.add_bulk_row(line)
+            imported_count += 1
+        
         self.trigger_autosave()
-        self.log_message(self.tr('Pasted into batch text box.'))
+        self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(imported_count)))
 
     def parse_batch_text(self):
-        content = self.batch_urls_text.get('1.0', tk.END).strip()
-        if not content:
-            return
+        """Parse all URLs in the pool bulk rows."""
+        count = 0
+        for row in self.bulk_rows:
+            url = row['var'].get().strip()
+            if url:
+                self._parse_single_row_url(url)
+                count += 1
         
-        urls = [line.strip() for line in content.splitlines() if line.strip()]
-        if not urls:
-            return
-        
-        # Check if we should clear current rows if they are empty
-        if len(self.bulk_rows) == 1 and not self.bulk_rows[0]['var'].get().strip():
-            self.bulk_rows[0]['var'].set(urls[0])
-            urls = urls[1:]
-            
-        for url in urls:
-            self.add_bulk_row(url)
-        
-        self.log_message(self.tr('Parsed {} URLs from batch text box.').replace('{}', str(len(urls) + (1 if content else 0))))
+        if count > 0:
+            self.log_message(f'Parsed {count} URLs from batch pool.')
+        else:
+            self.log_message(self.tr('No URLs to parse.'))
 
     def paste_playlist_from_clipboard(self):
         try:
@@ -5191,11 +5185,14 @@ class YtDlpGUI:
             elif isinstance(widget, scrolledtext.ScrolledText):
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
 
+        bulk_urls = [row['var'].get().strip() for row in getattr(self, 'bulk_rows', []) if row['var'].get().strip()]
+
         return {
             'config_version': 1,
             'language': self.current_language,
             'language_initialized': True,
             'gui_state': gui_state,
+            'bulk_urls': bulk_urls,
         }
 
     def apply_config(self):
@@ -5211,9 +5208,33 @@ class YtDlpGUI:
         self._pending_gui_state = gui_state
         if hasattr(self, 'language_var'):
             self.language_var.set(self.get_language_display(language))
+        
+        # Restore bulk URLs
+        bulk_urls = self.config.get('bulk_urls', [])
+        if bulk_urls:
+            # First ensure create_batch_download_tab was called or build it
+            self.ensure_tab_built_by_id('batch')
+            if hasattr(self, 'bulk_rows'):
+                self.clear_all_bulk_rows()
+                if bulk_urls:
+                    self.bulk_rows[0]['var'].set(bulk_urls[0])
+                    for url in bulk_urls[1:]:
+                        self.add_bulk_row(url)
+
         self.apply_localization()
         self.apply_pending_gui_state()
         self.status_var.set(self.tr('Ready'))
+
+    def ensure_tab_built_by_id(self, tab_id):
+        """Building specific tab if it's currently lazy."""
+        if not hasattr(self, 'notebook'):
+            return
+        # Find which index this tab ID belongs to
+        # Mapping depends on how tabs were added
+        # Just use the ensure_tab_built on the stored frames
+        frame = self._tab_controls.get(tab_id)
+        if frame:
+            self.ensure_tab_built(frame)
 
 
 def main():
