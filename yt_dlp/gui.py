@@ -79,6 +79,7 @@ TRANSLATIONS = {
         'Batch file path:': '批量文件路径：',
         'Batch URLs (one per line):': '批量 URL (每行一个):',
         'Parse': '解析',
+        'Parse All': '全部解析',
         'Bulk Paste': '批量粘贴',
         'Parse Batch': '解析批量',
         'Clear Pool': '清空列表',
@@ -372,6 +373,7 @@ TRANSLATIONS = {
         "Batch file path:": "Путь к пакетному файлу:",
         "Batch URLs (one per line):": "Ссылки для пакета (по одной на строку):",
         "Parse": "Разобрать",
+        "Parse All": "Разобрать все",
         "Bulk Paste": "Массовая вставка",
         "Parse Batch": "Разобрать пакет",
         "Clear Pool": "Очистить список",
@@ -564,6 +566,7 @@ TRANSLATIONS = {
         "Batch file path:": "ファイルパス:",
         "Batch URLs (one per line):": "URL一覧 (1行に1件):",
         "Parse": "解析",
+        "Parse All": "すべて解析",
         "Bulk Paste": "一括貼り付け",
         "Parse Batch": "一括解析",
         "Clear Pool": "リストをクリア",
@@ -751,6 +754,7 @@ TRANSLATIONS = {
         "Batch file path:": "배치 파일 경로:",
         "Batch URLs (one per line):": "배치 URL (한 줄에 하나):",
         "Parse": "분석",
+        "Parse All": "전체 분석",
         "Bulk Paste": "일괄 붙여넣기",
         "Parse Batch": "배치 분석",
         "Clear Pool": "목록 비우기",
@@ -2480,9 +2484,9 @@ class YtDlpGUI:
         btn_paste_batch.pack(side=tk.LEFT, padx=(8, 2))
         self.register_translatable_widget(btn_paste_batch, 'Paste')
 
-        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse'), command=self.parse_batch_text)
+        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse All'), command=self.parse_batch_text)
         btn_parse_batch.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_parse_batch, 'Parse')
+        self.register_translatable_widget(btn_parse_batch, 'Parse All')
         
         # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
@@ -4942,8 +4946,7 @@ class YtDlpGUI:
         # If main URL is empty but batch has a URL, use it
         if not url and batch.startswith('http') and '\n' not in batch:
             url = batch
-            self.url_entry.delete(0, tk.END)
-            self.url_entry.insert(0, url)
+            self.url_var.set(url)
         
         if not url:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
