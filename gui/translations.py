@@ -1662,4 +1662,3 @@ TRANSLATIONS['es']['Error'] = 'Error:'
 TRANSLATIONS['es']['Adobe Pass MSO:'] = 'Proveedor Adobe Pass MSO:'
 TRANSLATIONS['de']['SponsorBlock'] = 'SponsorBlock-Funktion'
 TRANSLATIONS['de']['Adobe Pass MSO:'] = 'Adobe Pass MSO-Anbieter:'
-
