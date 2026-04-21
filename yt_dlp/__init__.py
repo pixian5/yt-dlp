@@ -1113,8 +1113,8 @@ supported_remote_components.value.append('ejs:npm')
 def main_gui():
     """Launch the GUI interface for yt-dlp"""
     try:
-        from .gui import main as gui_main
-        gui_main()
+        import gui
+        gui.main()
     except ImportError as e:
         print(f'ERROR: Failed to import GUI module: {e}')
         print('The GUI requires tkinter. Please make sure tkinter is installed.')
