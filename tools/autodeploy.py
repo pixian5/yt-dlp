@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""自动化脚本：git 提交（中文 commit），推送，并执行 GUI 启动自检
+"""Automation script: git commit with Chinese messages, push, and run GUI self-test
 
-用法示例：
-  python tools/autodeploy.py --message "修复 翻译 覆盖" --push --run-test
-常用选项：
-  --no-commit    跳过 git commit（仅用于本地自检）
-  --no-push      跳过 git push（例如网络受限时）
-  --run-test     在提交/推送后执行 GUI 启动检测
+Usage example:
+  python tools/autodeploy.py --message "fix translation override" --push --run-test
+Common options:
+  --no-commit    Skip git commit (for local testing only)
+  --no-push      Skip git push (e.g., when network is restricted)
+  --run-test     Run GUI startup test after commit/push
 """
 import argparse
 import subprocess
-import sys
 import os
 
 
@@ -24,7 +23,7 @@ def run(cmd, check=True):
 
 
 def gui_start_test():
-    """短暂启动 GUI 以验证不闪退（运行后会在 1s 后退出）"""
+    """Start GUI briefly to verify it does not crash (exits after 1s)"""
     try:
         import tkinter as tk
         from yt_dlp.gui import YtDlpGUI
@@ -33,7 +32,7 @@ def gui_start_test():
         return 2
     try:
         root = tk.Tk()
-        app = YtDlpGUI(root)
+        YtDlpGUI(root)
         print('GUI_INIT_OK')
         root.after(1000, root.destroy)
         root.mainloop()
@@ -48,29 +47,29 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--message', '-m', default='自动化提交', help='中文提交信息')
     ap.add_argument('--no-commit', action='store_true', help='跳过 commit')
-    ap.add_argument('--no-push', action='store_true', help='跳过 push')
-    ap.add_argument('--run-test', action='store_true', help='运行 GUI 启动自检')
+    ap.add_argument('--no-push', action='store_true', help='Skip push')
+    ap.add_argument('--run-test', action='store_true', help='Run GUI startup self-test')
     args = ap.parse_args()
 
-    # 工作目录必须在仓库根
+    # Working directory must be at repo root
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     os.chdir(repo_root)
 
     if not args.no_commit:
         run(['git', 'add', '-A'])
-        # 使用中文提交信息
+        # Use Chinese commit message
         run(['git', 'commit', '-m', args.message])
 
     if not args.no_push and not args.no_commit:
-        # 推送可能需要网络/认证；让调用方决定是否允许
+        # Push may require network/auth; let caller decide
         run(['git', 'push'])
 
     if args.run_test:
         rc = gui_start_test()
         if rc != 0:
-            print('GUI 自检失败，返回码', rc)
+            print('GUI self-test failed, return code', rc)
             raise SystemExit(rc)
-        print('GUI 自检通过')
+        print('GUI self-test passed')
 
 
 if __name__ == '__main__':
