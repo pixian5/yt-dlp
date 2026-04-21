@@ -136,3 +136,8 @@ yt_dlp_ejs/
 # Local run_gui artifacts
 run_gui.log
 run_gui.pid
+
+# Development scratch files
+find_missing.py
+scratch_translate.py
+test_tk.py
