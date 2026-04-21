@@ -71,13 +71,14 @@ TRANSLATIONS = {
         'Ready': '就绪',
         'Clipboard is empty.': '剪贴板为空。',
         'Pasted link from clipboard.': '已从剪贴板粘贴链接。',
-        'Paste Top': '粘贴到顶部',
-        'Paste Bottom': '粘贴到底部',
+        'Paste Playlist': '粘贴播放列表',
         'Batch Download': '批量下载',
         'Playlist': '播放列表',
         'Batch file path:': '批量文件路径：',
         'Batch URLs (one per line):': '批量 URL (每行一个):',
         'Parse': '解析',
+        'Bulk Paste': '批量粘贴',
+        'Parse Batch': '解析批量',
         'Clear Pool': '清空列表',
         'General': '常规',
         'Network': '网络',
@@ -338,25 +339,6 @@ TRANSLATIONS = {
         "Deselect All": "取消全选",
         "Invert Select": "反选",
         "720p 60fps": "720p 60帧",
-        "All tasks processed.": "所有任务处理完成。",
-        "Stopping download...": "正在停止下载...",
-        "No download currently running.": "当前没有正在运行的下载。",
-        "Cleaning up partial files...": "正在清理临时文件...",
-        "Cleanup finished. Removed {} files.": "清理完成。删除了 {} 个文件。",
-        "Error during cleanup: {}": "清理过程中出错：{}",
-        "Not a playlist or no entries found.": "不是播放列表，或者未发现有效项目。",
-        "Failed to parse playlist.": "解析播放列表失败。",
-        "Error checking playlist: ": "检查播放列表出错：",
-        "No valid batch URLs found.": "未找到有效的批量 URL。",
-        "Batch parsed: {} URL(s) ready.": "批量解析完成：{} 条 URL 已就绪。",
-        "Parsed {} URLs from batch list.": "从批量列表中解析了 {} 条 URL。",
-        "Error reading batch file: ": "读取批量文件错误：",
-        "Error creating temporary batch file: {}": "创建临时批量文件失败：{}",
-        "Task failed with code ": "任务失败，状态码 ",
-        "ERROR in runner: ": "解析器错误：",
-        "Failed to save configuration: ": "保存配置失败：",
-        "Hint: JavaScript environment is missing.": "提示：检测到 JavaScript 运行环境缺失。",
-        "Please run 'brew install node' in terminal to fix this download error.": "请在终端运行 'brew install node' 以修复此下载报错。",
     },
     'ru': {
         "Extract audio (--extract-audio)": "Извлечь аудио (--extract-audio)",
@@ -380,15 +362,12 @@ TRANSLATIONS = {
         "Ready": "Готово",
         "Clipboard is empty.": "Буфер обмена пуст.",
         "Pasted link from clipboard.": "Ссылка вставлена из буфера обмена.",
-        "Paste": "Вставить",
-        "Pasted into batch text box.": "Вставлено в текстовое поле пакета.",
         "Paste Playlist": "Вставить плейлист",
         "Batch Download": "Пакетная загрузка",
         "Playlist": "Плейлист",
         "Batch file path:": "Путь к пакетному файлу:",
         "Batch URLs (one per line):": "Ссылки для пакета (по одной на строку):",
         "Parse": "Разобрать",
-        "Parse All": "Разобрать все",
         "Bulk Paste": "Массовая вставка",
         "Parse Batch": "Разобрать пакет",
         "Clear Pool": "Очистить список",
@@ -550,25 +529,6 @@ TRANSLATIONS = {
         "Deselect All": "Снять все",
         "Invert Select": "Инвертировать",
         "720p 60fps": "720p 60к/с",
-        "All tasks processed.": "Все задачи завершены.",
-        "Stopping download...": "Остановка загрузки...",
-        "No download currently running.": "Загрузка не запущена.",
-        "Cleaning up partial files...": "Очистка временных файлов...",
-        "Cleanup finished. Removed {} files.": "Очистка завершена. Удалено {} файлов.",
-        "Error during cleanup: {}": "Ошибка при очистке: {}",
-        "Not a playlist or no entries found.": "Это не плейлист или элементы не найдены.",
-        "Failed to parse playlist.": "Не удалось разобрать плейлист.",
-        "Error checking playlist: ": "Ошибка при проверке плейлиста: ",
-        "No valid batch URLs found.": "Действительные ссылки не найдены.",
-        "Batch parsed: {} URL(s) ready.": "Пакет разобран: {} ссылок готово.",
-        "Parsed {} URLs from batch list.": "Разобрано {} ссылок из списка.",
-        "Error reading batch file: ": "Ошибка чтения файла: ",
-        "Error creating temporary batch file: {}": "Ошибка создания временного файла: {}",
-        "Task failed with code ": "Задача завершилась с кодом ",
-        "ERROR in runner: ": "ОШИБКА в раннере: ",
-        "Failed to save configuration: ": "Не удалось сохранить конфиг: ",
-        "Hint: JavaScript environment is missing.": "Подсказка: Отсутствует среда JavaScript.",
-        "Please run 'brew install node' in terminal to fix this download error.": "Выполните 'brew install node' для устранения ошибки.",
     },
     'ja': {
         "Extract audio (--extract-audio)": "音声のみ抽出 (--extract-audio)",
@@ -592,15 +552,12 @@ TRANSLATIONS = {
         "Ready": "準備完了",
         "Clipboard is empty.": "クリップボードが空です。",
         "Pasted link from clipboard.": "クリップボードからリンクを貼り付けました。",
-        "Paste": "貼り付け",
-        "Pasted into batch text box.": "バッチテキストボックスに貼り付けました。",
         "Paste Playlist": "プレイリストを貼り付け",
         "Batch Download": "一括ダウンロード",
         "Playlist": "プレイリスト",
         "Batch file path:": "ファイルパス:",
         "Batch URLs (one per line):": "URL一覧 (1行に1件):",
         "Parse": "解析",
-        "Parse All": "すべて解析",
         "Bulk Paste": "一括貼り付け",
         "Parse Batch": "一括解析",
         "Clear Pool": "リストをクリア",
@@ -757,25 +714,6 @@ TRANSLATIONS = {
         "Deselect All": "すべて解除",
         "Invert Select": "選択反転",
         "720p 60fps": "720p 60fps",
-        "All tasks processed.": "すべてのタスクが完了しました。",
-        "Stopping download...": "ダウンロードを停止しています...",
-        "No download currently running.": "実行中のダウンロードはありません。",
-        "Cleaning up partial files...": "一時ファイルをクリーンアップしています...",
-        "Cleanup finished. Removed {} files.": "クリーンアップ完了。{} 個のファイルを削除しました。",
-        "Error during cleanup: {}": "クリーンアップ中にエラーが発生しました: {}",
-        "Not a playlist or no entries found.": "プレイリストではないか、項目が見つかりませんでした。",
-        "Failed to parse playlist.": "プレイリストの解析に失敗しました。",
-        "Error checking playlist: ": "プレイリストの確認エラー: ",
-        "No valid batch URLs found.": "有効な一括 URL が見つかりませんでした。",
-        "Batch parsed: {} URL(s) ready.": "一括解析完了: {} 件準備完了。",
-        "Parsed {} URLs from batch list.": "リストから {} 件の URL を解析しました。",
-        "Error reading batch file: ": "一括ファイルの読み込みエラー: ",
-        "Error creating temporary batch file: {}": "一時バッチファイルの作成エラー: {}",
-        "Task failed with code ": "タスクが失敗しました。コード: ",
-        "ERROR in runner: ": "実行エラー: ",
-        "Failed to save configuration: ": "設定の保存に失敗しました: ",
-        "Hint: JavaScript environment is missing.": "ヒント: JavaScript 実行環境が不足しています。",
-        "Please run 'brew install node' in terminal to fix this download error.": "このエラーを解決するには、ターミナルで 'brew install node' を実行してください。",
     },
     'ko': {
         "Extract audio (--extract-audio)": "오디오만 추출 (--extract-audio)",
@@ -799,15 +737,12 @@ TRANSLATIONS = {
         "Ready": "준비됨",
         "Clipboard is empty.": "클립보드가 비어 있습니다.",
         "Pasted link from clipboard.": "클립보드에서 링크를 붙여넣었습니다.",
-        "Paste": "붙여넣기",
-        "Pasted into batch text box.": "배치 텍스트 상자에 붙여넣었습니다.",
         "Paste Playlist": "재생목록 붙여넣기",
         "Batch Download": "배치 다운로드",
         "Playlist": "재생목록",
         "Batch file path:": "배치 파일 경로:",
         "Batch URLs (one per line):": "배치 URL (한 줄에 하나):",
         "Parse": "분석",
-        "Parse All": "전체 분석",
         "Bulk Paste": "일괄 붙여넣기",
         "Parse Batch": "배치 분석",
         "Clear Pool": "목록 비우기",
@@ -929,29 +864,11 @@ TRANSLATIONS = {
         "interaction": "상호작용",
         "music_offtopic": "음악: 주제와 상관없는 부분",
         "poi_highlight": "하이라이트",
+        "chapter": "챕터",
+        "Select All": "모두 선택",
         "Deselect All": "모두 해제",
         "Invert Select": "선택 반전",
         "720p 60fps": "720p 60fps",
-        "All tasks processed.": "모든 작업이 처리되었습니다.",
-        "Stopping download...": "다운로드 중지 중...",
-        "No download currently running.": "현재 실행 중인 다운로드가 없습니다.",
-        "Cleaning up partial files...": "임시 파일 정리 중...",
-        "Cleanup finished. Removed {} files.": "정리 완료. {}개의 파일을 삭제했습니다.",
-        "Error during cleanup: {}": "정리 중 오류 발생: {}",
-        "Not a playlist or no entries found.": "재생목록이 아니거나 항목을 찾을 수 없습니다.",
-        "Failed to parse playlist.": "재생목록 분석 실패.",
-        "Error checking playlist: ": "재생목록 확인 중 오류: ",
-        "No valid batch URLs found.": "유효한 배치 URL을 찾을 수 없습니다.",
-        "Batch parsed: {} URL(s) ready.": "배치 분석 완료: {}개의 URL 준비됨.",
-        "Parsed {} URLs from batch list.": "배치 목록에서 {}개의 URL을 분석했습니다.",
-        "Error reading batch file: ": "배치 파일 읽기 오류: ",
-        "Error creating temporary batch file: {}": "임시 배치 파일 생성 오류: {}",
-        "Task failed with code ": "작업 실패, 코드: ",
-        "ERROR in runner: ": "실행기 오류: ",
-        "Failed to save configuration: ": "설정 저장 실패: ",
-        "Imported {} URLs into pool.": "{}개의 URL을 목록에 가져왔습니다.",
-        "Hint: JavaScript environment is missing.": "힌트: JavaScript 실행 환경이 없습니다.",
-        "Please run 'brew install node' in terminal to fix this download error.": "이 오류를 해결하려면 터미널에서 'brew install node'를 실행하십시오.",
     },
     'es': {
         "Extract audio (--extract-audio)": "Extraer audio (--extract-audio)",
@@ -1210,26 +1127,6 @@ TRANSLATIONS = {
         "Select All": "Seleccionar todo",
         "Deselect All": "Deseleccionar todo",
         "Invert Select": "Invertir selección",
-        "All tasks processed.": "Todas las tareas procesadas.",
-        "Stopping download...": "Deteniendo descarga...",
-        "No download currently running.": "No hay descargas en curso.",
-        "Cleaning up partial files...": "Limpiando archivos temporales...",
-        "Cleanup finished. Removed {} files.": "Limpieza finalizada. Eliminados {} archivos.",
-        "Error during cleanup: {}": "Error durante la limpieza: {}",
-        "Not a playlist or no entries found.": "No es una lista de reproducción o no se encontraron entradas.",
-        "Failed to parse playlist.": "Error al analizar la lista de reproducción.",
-        "Error checking playlist: ": "Error al comprobar la lista de reproducción: ",
-        "No valid batch URLs found.": "No se encontraron URLs válidas.",
-        "Batch parsed: {} URL(s) ready.": "Lote analizado: {} URLs listas.",
-        "Parsed {} URLs from batch list.": "Analizadas {} URLs de la lista.",
-        "Error reading batch file: ": "Error al leer el archivo de lote: ",
-        "Error creating temporary batch file: {}": "Error al crear archivo de lote temporal: {}",
-        "Task failed with code ": "Tarea fallida con código ",
-        "ERROR in runner: ": "ERROR en el ejecutor: ",
-        "Failed to save configuration: ": "Error al guardar la configuración: ",
-        "Imported {} URLs into pool.": "Importadas {} URLs a la lista.",
-        "Hint: JavaScript environment is missing.": "Sugerencia: Falta el entorno JavaScript.",
-        "Please run 'brew install node' in terminal to fix this download error.": "Ejecute 'brew install node' para corregir este error.",
     },
     'fr': {
         "Extract audio (--extract-audio)": "Extraire l'audio (--extract-audio)",
@@ -1502,26 +1399,6 @@ TRANSLATIONS = {
         "Invert Select": "Inverser la sélection",
         "Allow dynamic MPD manifests (--allow-dynamic-mpd)": "Autoriser les manifestes MPD dynamiques (--allow-dynamic-mpd)",
         "Ignore dynamic MPD manifests (--ignore-dynamic-mpd)": "Ignorer les manifestes MPD dynamiques (--ignore-dynamic-mpd)",
-        "All tasks processed.": "Toutes les tâches ont été traitées.",
-        "Stopping download...": "Arrêt du téléchargement...",
-        "No download currently running.": "Aucun téléchargement en cours.",
-        "Cleaning up partial files...": "Nettoyage des fichiers temporaires...",
-        "Cleanup finished. Removed {} files.": "Nettoyage terminé. {} fichiers supprimés.",
-        "Error during cleanup: {}": "Erreur lors du nettoyage : {}",
-        "Not a playlist or no entries found.": "Pas une liste de lecture ou aucune entrée trouvée.",
-        "Failed to parse playlist.": "Échec de l'analyse de la liste de lecture.",
-        "Error checking playlist: ": "Erreur lors de la vérification de la liste : ",
-        "No valid batch URLs found.": "Aucune URL valide trouvée.",
-        "Batch parsed: {} URL(s) ready.": "Lot analysé : {} URL(s) prêtes.",
-        "Parsed {} URLs from batch list.": "{} URL(s) analysées depuis la liste.",
-        "Error reading batch file: ": "Erreur de lecture du fichier : ",
-        "Error creating temporary batch file: {}": "Erreur lors de la création du fichier temporaire : {}",
-        "Task failed with code ": "Tâche échouée avec le code ",
-        "ERROR in runner: ": "ERREUR dans l'exécuteur : ",
-        "Failed to save configuration: ": "Échec de sauvegarde de la config : ",
-        "Imported {} URLs into pool.": "{} URL(s) importées dans la liste.",
-        "Hint: JavaScript environment is missing.": "Conseil : L'environnement JavaScript est manquant.",
-        "Please run 'brew install node' in terminal to fix this download error.": "Exécutez 'brew install node' pour corriger cette erreur.",
     },
     'de': {
         'Language:': 'Sprache:',
@@ -1873,6 +1750,7 @@ class YtDlpGUI:
         self.batch_file_var = tk.StringVar()
         self.reverse_order = tk.BooleanVar(value=False)
         self.exclude_private = tk.BooleanVar(value=True)
+        self.batch_urls_text = None
         self.bulk_rows = []
         
         # Language selection variable with trace
@@ -2078,13 +1956,6 @@ class YtDlpGUI:
                 if widget.type(item) == 'window':
                     sub_widget = widget.nametowidget(widget.itemcget(item, 'window'))
                     self.localize_widget_tree(sub_widget)
-        # PERFORMANCE OPTIMIZATION:
-        # Instead of skipping the whole container, we only skip deep recursion if the tab isn't visible
-        # or if we've already localized its children.
-        if hasattr(self, 'bulk_scroll_frame') and widget == self.bulk_scroll_frame:
-            # We still visit the rows, but we can potentially optimize here.
-            pass
-
         for child in widget.winfo_children():
             self.localize_widget_tree(child)
 
@@ -2291,11 +2162,8 @@ class YtDlpGUI:
 
     def unload_tab(self, frame):
         """Destroy inactive tab contents while preserving their GUI state."""
-        # EXEMPTION: Never unload tabs containing complex dynamic list data
-        is_playlist = (hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame)
-        is_batch = (hasattr(self, 'batch_tab_frame') and frame == self.batch_tab_frame)
-        
-        if frame not in self._built_tabs or is_playlist or is_batch:
+        # EXEMPTION: Never unload the Playlist tab because it contains dynamic list data
+        if frame not in self._built_tabs or (hasattr(self, 'playlist_tab_frame') and frame == self.playlist_tab_frame):
             return
 
         for name in self._tab_controls.get(frame, set()):
@@ -2321,11 +2189,9 @@ class YtDlpGUI:
         previous_frame = self._active_tab_frame
         
         if previous_frame is not None and previous_frame != frame:
-            # EXEMPTION: Never unload tabs with dynamic list data
+            # EXEMPTION: Never unload the Playlist tab
             is_playlist = (hasattr(self, 'playlist_tab_frame') and previous_frame == self.playlist_tab_frame)
-            is_batch = (hasattr(self, 'batch_tab_frame') and previous_frame == self.batch_tab_frame)
-            
-            if not is_playlist and not is_batch:
+            if not is_playlist:
                 self.unload_tab(previous_frame)
                 
         self.ensure_tab_built(frame)
@@ -2516,7 +2382,7 @@ class YtDlpGUI:
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
 
         # Register tabs for lazy creation
-        self.batch_tab_frame = self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
+        batch_frame = self.add_lazy_tab('batch', 'Batch Download', self.create_batch_download_tab)
 
         # Insert Playlist tab so it appears before the General tab
         self.playlist_tab_frame = self.create_playlist_tab()
@@ -2546,8 +2412,8 @@ class YtDlpGUI:
         self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
         self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
         
-        self.ensure_tab_built(self.batch_tab_frame)
-        self._active_tab_frame = self.batch_tab_frame
+        self.ensure_tab_built(batch_frame)
+        self._active_tab_frame = batch_frame
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
@@ -2596,29 +2462,28 @@ class YtDlpGUI:
         btn_browse.pack(side=tk.LEFT)
         self.register_translatable_widget(btn_browse, 'Browse...')
 
-        header_row = ttk.Frame(frame)
+        list_row = ttk.Frame(frame)
+        list_row.pack(fill=tk.BOTH, expand=False, pady=(0, 8))
+        
+        header_row = ttk.Frame(list_row)
         header_row.pack(fill=tk.X, pady=(0, 5))
         
         lbl_list = ttk.Label(header_row, text=self.tr('Batch URLs (one per line):'))
         lbl_list.pack(side=tk.LEFT)
         self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
         
-        btn_paste_top = ttk.Button(header_row, text=self.tr('Paste Top'), command=lambda: self.paste_to_batch_text(pos='top'))
-        btn_paste_top.pack(side=tk.LEFT, padx=(8, 2))
-        self.register_translatable_widget(btn_paste_top, 'Paste Top')
+        # Control buttons will be placed below the batch URLs text area (added after the text widget)
 
-        btn_paste_bottom = ttk.Button(header_row, text=self.tr('Paste Bottom'), command=lambda: self.paste_to_batch_text(pos='bottom'))
-        btn_paste_bottom.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_paste_bottom, 'Paste Bottom')
-
-        btn_parse_batch = ttk.Button(header_row, text=self.tr('Parse'), command=self.parse_batch_text)
-        btn_parse_batch.pack(side=tk.LEFT, padx=2)
-        self.register_translatable_widget(btn_parse_batch, 'Parse')
-        
         # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
         btn_clear.pack(side=tk.RIGHT)
         self.register_translatable_widget(btn_clear, 'Clear Pool')
+        
+        self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
+        self.batch_urls_text.pack(fill=tk.X, expand=True)
+        self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
+
+        # NOTE: Controls row for paste/parse will be placed after the dynamic rows
 
         dyn_container = ttk.Frame(frame)
         dyn_container.pack(fill=tk.BOTH, expand=True)
@@ -2637,116 +2502,68 @@ class YtDlpGUI:
         # Controls row removed: Bulk Paste and Parse Batch buttons were intentionally deleted
         # per user request. Keep dynamic rows and clear button intact.
         self.bulk_rows = []
-        
-        # Restore URLs from config if present
-        bulk_urls = self.config.get('bulk_urls', [])
-        if bulk_urls:
-            self.bulk_scroll_frame.unbind('<Configure>')
-            
-            # Hybrid approach for "Instant" feel:
-            # 1. Load first 40 rows synchronously (instant enough)
-            first_chunk = bulk_urls[:40]
-            remaining = bulk_urls[40:]
-            
-            for url in first_chunk:
-                self.add_bulk_row(url, localize=False, register=False)
-            
-            # Initial layout update
-            self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-            self.bulk_canvas.yview_moveto(0)
-            
-            # 2. Background load the rest if any
-            if remaining:
-                def _bg_load(idx):
-                    chunk_size = 60
-                    end = min(idx + chunk_size, len(remaining))
-                    for i in range(idx, end):
-                        self.add_bulk_row(remaining[i], localize=False, register=False)
-                    
-                    if end < len(remaining):
-                        self.root.after(1, lambda: _bg_load(end))
-                    else:
-                        # Final re-bind and layout
-                        self.bulk_scroll_frame.bind(
-                            '<Configure>',
-                            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
-                        self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-
-                self.root.after(10, lambda: _bg_load(0))
-            else:
-                self.bulk_scroll_frame.bind(
-                            '<Configure>',
-                            lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
-        else:
-            self.add_bulk_row()
+        self.add_bulk_row()
 
         return frame
 
-    def add_bulk_row(self, initial_text='', localize=True, register=True, pos='bottom'):
-        # Reverting to ttk widgets for "Premium" native look (removes "black borders")
+    def add_bulk_row(self, initial_text=''):
         row = ttk.Frame(self.bulk_scroll_frame)
-        
-        if pos == 'top' and self.bulk_rows:
-            row.pack(fill=tk.X, pady=3, before=self.bulk_rows[0]['frame'])
-        else:
-            row.pack(fill=tk.X, pady=3)
-        
+        row.pack(fill=tk.X, pady=2)
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
-        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
-        # Localize button text immediately
+        # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
         btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_parse, 'Parse')
         
-        if register:
-            self.register_translatable_widget(btn_parse, 'Parse')
-        
-        # Logic for +/- buttons based on position is tricky, simplify to just show - on all except maybe first
         if len(self.bulk_rows) == 0:
             btn_add = ttk.Button(row, text='+', width=3, command=self.add_bulk_row)
             btn_add.pack(side=tk.LEFT)
         else:
             btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
             btn_remove.pack(side=tk.LEFT)
-            
-        if pos == 'top':
-            self.bulk_rows.insert(0, {'frame': row, 'var': var})
-        else:
-            self.bulk_rows.append({'frame': row, 'var': var})
+        self.bulk_rows.append({'frame': row, 'var': var})
         
-        if localize:
-            self.localize_widget_tree(row)
+        # Immediate sync for this newly added row
+        self.localize_widget_tree(row)
 
     def remove_bulk_row(self, frame):
         frame.destroy()
         self.bulk_rows = [r for r in self.bulk_rows if r['frame'] != frame]
         if not self.bulk_rows:
             self.add_bulk_row()
-        self.trigger_autosave()
 
-    def get_bulk_urls(self):
-        """Unified method to get all non-empty URLs from the dynamic row list."""
-        urls = []
-        for row in getattr(self, 'bulk_rows', []):
-            var = row.get('var')
-            if var:
-                value = var.get().strip()
-                if value:
-                    urls.append(value)
-        return urls
+    def remove_batch_row(self, frame):
+        """Compatibility alias for previous function name."""
+        self.remove_bulk_row(frame)
+
+    def paste_bulk_urls_smart(self):
+        """Smartly detect and distribute URLs from clipboard."""
+        try:
+            raw = self.root.clipboard_get()
+            lines = [l.strip() for l in raw.splitlines() if l.strip()]
+            if not lines:
+                return
+            if self.bulk_rows and not self.bulk_rows[0]['var'].get().strip():
+                self.bulk_rows[0]['var'].set(lines[0])
+                lines = lines[1:]
+            for line in lines:
+                self.add_bulk_row(line)
+            self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + 1)))
+        except Exception as e:
+            self.log_message(f'Paste failed: {e}')
 
     def clear_all_bulk_rows(self):
-        """Clear all batch URLs from the dynamic list."""
         for row in self.bulk_rows[1:]:
             row['frame'].destroy()
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
-            var = self.bulk_rows[0].get('var')
-            if var:
-                var.set('')
-        self.trigger_autosave()
+            self.bulk_rows[0]['var'].set('')
+        if hasattr(self, 'batch_urls_text'):
+            self.batch_urls_text.delete('1.0', tk.END)
 
     def _parse_single_row_url(self, url):
         url = (url or '').strip()
@@ -2775,12 +2592,16 @@ class YtDlpGUI:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     urls.extend([line.strip() for line in f if line.strip() and not line.strip().startswith('#')])
             except Exception as e:
-                self.log_message(self.translate_concat(self.tr('Error reading batch file: '), str(e)))
+                self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
 
+        if hasattr(self, 'batch_urls_text'):
+            text_urls = [line.strip() for line in self.batch_urls_text.get('1.0', tk.END).splitlines() if line.strip()]
+            urls.extend(text_urls)
 
-        for url in self.get_bulk_urls():
-            if url:
-                urls.append(url)
+        for row in getattr(self, 'bulk_rows', []):
+            value = row['var'].get().strip()
+            if value:
+                urls.append(value)
 
         seen = set()
         normalized = []
@@ -2790,14 +2611,14 @@ class YtDlpGUI:
                 normalized.append(url)
 
         if not normalized:
-            self.log_message(self.tr('No valid batch URLs found.'))
+            self.log_message('No valid batch URLs found.')
             self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
             return
 
         content = '\n'.join(normalized)
         self.root.after(0, lambda: self.batch_file_entry.delete(0, tk.END))
         self.root.after(0, lambda: self.batch_file_entry.insert(0, content))
-        self.log_message(self.tr('Batch parsed: {} URL(s) ready.').replace('{}', str(len(normalized))))
+        self.log_message(f'Batch parsed: {len(normalized)} URL(s) ready.')
         self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
     
     def create_playlist_tab(self, frame=None):
@@ -4238,60 +4059,6 @@ class YtDlpGUI:
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
 
-    def paste_to_batch_text(self, pos='bottom'):
-        try:
-            content = self.root.clipboard_get().strip()
-        except tk.TclError:
-            content = ''
-
-        if not content:
-            self.log_message(self.tr('Clipboard is empty.'))
-            return
-
-        lines = [l.strip() for l in content.splitlines() if 'http' in l.lower()]
-        if not lines:
-            self.log_message(self.tr('No URLs found in clipboard.'))
-            return
-
-        if pos == 'top':
-            lines.reverse()
-
-        imported_count = 0
-        # If the first row is empty and we are pasting to bottom, fill it first. 
-        if pos == 'bottom' and len(self.bulk_rows) == 1 and not self.bulk_rows[0].get('var').get().strip():
-            self.bulk_rows[0].get('var').set(lines[0])
-            lines = lines[1:]
-            imported_count += 1
-        
-        if lines:
-            # PERFORMANCE OPTIMIZATION: Unbind during bulk paste
-            self.bulk_scroll_frame.unbind('<Configure>')
-            
-            for line in lines:
-                self.add_bulk_row(line, localize=False, register=False, pos=pos)
-            
-            # Re-bind and update once
-            self.bulk_scroll_frame.bind(
-                '<Configure>',
-                lambda e: self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all')))
-            
-            self.bulk_canvas.configure(scrollregion=self.bulk_canvas.bbox('all'))
-            
-        self.trigger_autosave()
-        self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + imported_count)))
-
-    def parse_batch_text(self):
-        """Parse all URLs in the pool bulk rows."""
-        urls = self.get_bulk_urls()
-        if not urls:
-            self.log_message(self.tr('No URLs to parse.'))
-            return
-        
-        for url in urls:
-            self._parse_single_row_url(url)
-        
-        self.log_message(self.tr('Parsed {} URLs from batch list.').replace('{}', str(len(urls))))
-
     def paste_playlist_from_clipboard(self):
         try:
             clipboard_text = self.root.clipboard_get().strip()
@@ -4891,7 +4658,7 @@ class YtDlpGUI:
                         atexit.register(self._cleanup_temp_files)
                     self._temp_batch_files.append(temp_path)
                 except Exception as e:
-                    self.log_message(self.tr('Error creating temporary batch file: {}').replace('{}', str(e)))
+                    self.log_message(f'Error creating temporary batch file: {e}')
                     args.extend(['-a', batch_file]) # Fallback
             else:
                 args.extend(['-a', batch_file])
@@ -4927,7 +4694,7 @@ class YtDlpGUI:
         cmd_text = self.generated_cmd.get('1.0', tk.END).strip()
         self.root.clipboard_clear()
         self.root.clipboard_append(cmd_text)
-        self.log_message(self.tr('Command copied to clipboard!'))
+        self.log_message('Command copied to clipboard!')
 
     def run_ytdlp(self, tasks):
         """Run a list of yt-dlp tasks (args sets) sequentially"""
@@ -4959,8 +4726,8 @@ class YtDlpGUI:
                 if process.returncode != 0 and process.returncode not in (15, -15):
                     self.log_message(self.translate_concat('Task failed with code ', process.returncode))
                     if "n challenge solving failed" in "".join(self.console.get("1.0", tk.END)):
-                        self.log_message("\n[!] " + self.tr('Hint: JavaScript environment is missing.'))
-                        self.log_message("[!] " + self.tr("Please run 'brew install node' in terminal to fix this download error."))
+                        self.log_message("\n[!] 提示：检测到 JavaScript 运行环境缺失。")
+                        self.log_message("[!] 请在终端运行 'brew install node' 以修复此下载报错。")
                     # We continue even if one fails
                 
                 if not hasattr(self, 'current_process') or self.current_process is None:
@@ -5030,9 +4797,8 @@ class YtDlpGUI:
                         except Exception as e:
                             self.log_message(f"Failed to remove {filename}: {e}")
             self.log_message(f"Cleanup finished. Removed {count} files.")
-            self.log_message(self.tr('Cleanup finished. Removed {} files.').replace('{}', str(count)))
         except Exception as e:
-            self.log_message(self.tr('Error during cleanup: {}').replace('{}', str(e)))
+            self.log_message(f"Error during cleanup: {e}")
 
     def start_download(self):
         """Start download in a separate thread"""
@@ -5134,7 +4900,8 @@ class YtDlpGUI:
         # If main URL is empty but batch has a URL, use it
         if not url and batch.startswith('http') and '\n' not in batch:
             url = batch
-            self.url_var.set(url)
+            self.url_entry.delete(0, tk.END)
+            self.url_entry.insert(0, url)
         
         if not url:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
@@ -5376,14 +5143,11 @@ class YtDlpGUI:
             elif isinstance(widget, scrolledtext.ScrolledText):
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
 
-        bulk_urls = self.get_bulk_urls()
-
         return {
             'config_version': 1,
             'language': self.current_language,
             'language_initialized': True,
             'gui_state': gui_state,
-            'bulk_urls': bulk_urls,
         }
 
     def apply_config(self):
@@ -5399,35 +5163,9 @@ class YtDlpGUI:
         self._pending_gui_state = gui_state
         if hasattr(self, 'language_var'):
             self.language_var.set(self.get_language_display(language))
-        
-        # Restore bulk URLs
-        bulk_urls = self.config.get('bulk_urls', [])
-        if bulk_urls:
-            # First ensure create_batch_download_tab was called or build it
-            self.ensure_tab_built_by_id('batch')
-            if hasattr(self, 'bulk_rows'):
-                self.clear_all_bulk_rows()
-                if bulk_urls:
-                    var = self.bulk_rows[0].get('var')
-                    if var:
-                        var.set(bulk_urls[0])
-                    for url in bulk_urls[1:]:
-                        self.add_bulk_row(url)
-
         self.apply_localization()
         self.apply_pending_gui_state()
         self.status_var.set(self.tr('Ready'))
-
-    def ensure_tab_built_by_id(self, tab_id):
-        """Building specific tab if it's currently lazy."""
-        if not hasattr(self, 'notebook'):
-            return
-        # Find which index this tab ID belongs to
-        # Mapping depends on how tabs were added
-        # Just use the ensure_tab_built on the stored frames
-        frame = self._tab_controls.get(tab_id)
-        if frame:
-            self.ensure_tab_built(frame)
 
 
 def main():
