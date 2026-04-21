@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class VideoFormatMixin:
@@ -55,11 +55,11 @@ class VideoFormatMixin:
         ttk.Label(scrollable_frame, text='Quick Select Resolution:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.res_var = tk.StringVar()
         res_options = ['Best (Auto)', '4K (2160p)', '2K (1440p)', '1080p 60fps', '1080p', '720p 60fps', '720p', '480p', '360p']
-        self.res_selector = ttk.Combobox(scrollable_frame, textvariable=self.res_var, width=30, 
-                                          values=[self.tr(opt) for opt in res_options], state='readonly')
+        self.res_selector = ttk.Combobox(scrollable_frame, textvariable=self.res_var, width=30,
+                                         values=[self.tr(opt) for opt in res_options], state='readonly')
         self.res_selector.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         self.res_selector.bind('<<ComboboxSelected>>', self._on_res_selected)
-        self.register_translatable_widget(self.res_selector, 'Quick Select Resolution Selector') # Placeholder to trigger refresh
+        self.register_translatable_widget(self.res_selector, 'Quick Select Resolution Selector')  # Placeholder to trigger refresh
         row += 1
 
         ttk.Label(scrollable_frame, text='Format sort:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
@@ -79,22 +79,22 @@ class VideoFormatMixin:
 
         ttk.Label(scrollable_frame, text='Merge output format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.merge_output_format = ttk.Combobox(scrollable_frame, width=15,
-                                                 values=['', 'mkv', 'mp4', 'ogg', 'webm', 'flv'],
-                                                 state='readonly')
+                                                values=['', 'mkv', 'mp4', 'ogg', 'webm', 'flv'],
+                                                state='readonly')
         self.merge_output_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Video multistreams:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.video_multistreams = ttk.Combobox(scrollable_frame, width=15,
-                                                values=['', 'yes', 'no'],
-                                                state='readonly')
+                                               values=['', 'yes', 'no'],
+                                               state='readonly')
         self.video_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Audio multistreams:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.audio_multistreams = ttk.Combobox(scrollable_frame, width=15,
-                                                values=['', 'yes', 'no'],
-                                                state='readonly')
+                                               values=['', 'yes', 'no'],
+                                               state='readonly')
         self.audio_multistreams.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -107,7 +107,7 @@ class VideoFormatMixin:
             if self.tr(opt) == val:
                 original_key = opt
                 break
-        
+
         if not original_key:
             return
 
@@ -126,4 +126,3 @@ class VideoFormatMixin:
         if res_code:
             self.format.delete(0, tk.END)
             self.format.insert(0, res_code)
-

@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class GeoRestrictionMixin:
@@ -58,4 +58,3 @@ class GeoRestrictionMixin:
         self.geo_bypass_ip_block.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         ttk.Label(frame, text='(CIDR notation)').grid(row=row, column=2, sticky=tk.W, pady=5)
         row += 1
-

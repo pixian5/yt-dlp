@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class PostprocessingTabMixin:
@@ -62,8 +62,8 @@ class PostprocessingTabMixin:
 
         ttk.Label(scrollable_frame, text='Audio format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.audio_format = ttk.Combobox(scrollable_frame, width=15,
-                                          values=['', 'best', 'aac', 'm4a', 'mp3', 'opus', 'vorbis', 'wav', 'flac', 'alac'],
-                                          state='readonly')
+                                         values=['', 'best', 'aac', 'm4a', 'mp3', 'opus', 'vorbis', 'wav', 'flac', 'alac'],
+                                         state='readonly')
         self.audio_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -75,15 +75,15 @@ class PostprocessingTabMixin:
 
         ttk.Label(scrollable_frame, text='Recode video format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.recode_video = ttk.Combobox(scrollable_frame, width=15,
-                                          values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi'],
-                                          state='readonly')
+                                         values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi'],
+                                         state='readonly')
         self.recode_video.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
         ttk.Label(scrollable_frame, text='Remux video format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.remux_video = ttk.Combobox(scrollable_frame, width=15,
-                                         values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi', 'mov'],
-                                         state='readonly')
+                                        values=['', 'mp4', 'flv', 'ogg', 'webm', 'mkv', 'avi', 'mov'],
+                                        state='readonly')
         self.remux_video.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -139,4 +139,3 @@ class PostprocessingTabMixin:
         self.postprocessor_args = ttk.Entry(scrollable_frame, width=50)
         self.postprocessor_args.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
         row += 1
-

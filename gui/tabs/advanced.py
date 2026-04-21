@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class AdvancedTabMixin:
@@ -35,7 +35,7 @@ class AdvancedTabMixin:
         ttk.Label(frame, text='Raw command-line arguments:').grid(row=row, column=0, sticky=tk.NW, pady=5, padx=5)
         self.raw_args = scrolledtext.ScrolledText(frame, width=80, height=10, wrap=tk.WORD)
         self.raw_args.grid(row=row, column=1, sticky=tk.EW, pady=5, padx=5)
-        ttk.Label(frame, text='(One argument per line or space-separated)').grid(row=row+1, column=1, sticky=tk.W, padx=5)
+        ttk.Label(frame, text='(One argument per line or space-separated)').grid(row=row + 1, column=1, sticky=tk.W, padx=5)
         row += 2
 
         ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=row, column=0, columnspan=2, sticky=tk.EW, pady=10)

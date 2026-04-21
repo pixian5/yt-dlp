@@ -12,10 +12,10 @@ from .translations import TRANSLATIONS
 
 
 __all__ = [
-    'YtDlpGUI',
+    'GUI_DEFAULT_STATE',
     'LANGUAGE_OPTIONS',
     'SB_CATEGORIES',
-    'GUI_DEFAULT_STATE',
     'TRANSLATIONS',
+    'YtDlpGUI',
     'main',
 ]

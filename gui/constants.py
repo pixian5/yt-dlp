@@ -9,13 +9,13 @@ LANGUAGE_OPTIONS = {
     'ko': '한국어',
     'es': 'Español',
     'fr': 'Français',
-    'de': 'Deutsch / German'
+    'de': 'Deutsch / German',
 }
 
 
 SB_CATEGORIES = [
     'sponsor', 'intro', 'outro', 'selfpromo', 'preview',
-    'filler', 'interaction', 'music_offtopic', 'poi_highlight', 'chapter'
+    'filler', 'interaction', 'music_offtopic', 'poi_highlight', 'chapter',
 ]
 
 

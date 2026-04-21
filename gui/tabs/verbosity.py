@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class VerbosityTabMixin:
@@ -165,10 +165,9 @@ class VerbosityTabMixin:
             scrollable_frame,
             values=[self.tr('Default (Auto)'), 'zh-CN', 'zh-TW', 'zh-HK', 'en', 'ja', 'ko'],
             state='readonly',
-            width=20
+            width=20,
         )
         self.metadata_lang.set('zh-CN')
         self.metadata_lang.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         self.register_stateful_controls(set(self.__dict__) - before2)
         row += 1
-

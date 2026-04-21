@@ -4,12 +4,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 from gui.constants import SB_CATEGORIES
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class SponsorblockTabMixin:
@@ -47,7 +47,7 @@ class SponsorblockTabMixin:
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
         row = 0
-        
+
         # Main switches
         self.sponsorblock_mark = tk.BooleanVar()
         cb_m = ttk.Checkbutton(scroll_frame, text='Mark SponsorBlock chapters (--sponsorblock-mark)', variable=self.sponsorblock_mark)
@@ -60,7 +60,7 @@ class SponsorblockTabMixin:
         cb_r.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         self.register_translatable_widget(cb_r, 'Remove SponsorBlock segments (--sponsorblock-remove)')
         row += 1
-        
+
         self.no_sponsorblock = tk.BooleanVar()
         cb_nosb = ttk.Checkbutton(scroll_frame, text='Disable SponsorBlock (--no-sponsorblock)', variable=self.no_sponsorblock)
         cb_nosb.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
@@ -74,23 +74,23 @@ class SponsorblockTabMixin:
         rem_lf = ttk.LabelFrame(scroll_frame, text='SponsorBlock categories to remove:', padding=10)
         rem_lf.grid(row=row, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
         self.register_translatable_widget(rem_lf, 'SponsorBlock categories to remove:')
-        
+
         # Selection buttons for Remove group
         rem_ctrl = ttk.Frame(rem_lf)
         rem_ctrl.pack(fill=tk.X, pady=(0, 5))
-        
-        btn_rm_all = ttk.Button(rem_ctrl, text="Select All", command=lambda: self._set_sb_group('remove', True))
+
+        btn_rm_all = ttk.Button(rem_ctrl, text='Select All', command=lambda: self._set_sb_group('remove', True))
         btn_rm_all.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_rm_all, 'Select All')
-        
-        btn_rm_none = ttk.Button(rem_ctrl, text="Deselect All", command=lambda: self._set_sb_group('remove', False))
+
+        btn_rm_none = ttk.Button(rem_ctrl, text='Deselect All', command=lambda: self._set_sb_group('remove', False))
         btn_rm_none.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_rm_none, 'Deselect All')
-        
-        btn_rm_inv = ttk.Button(rem_ctrl, text="Invert Select", command=lambda: self._set_sb_group('remove', 'invert'))
+
+        btn_rm_inv = ttk.Button(rem_ctrl, text='Invert Select', command=lambda: self._set_sb_group('remove', 'invert'))
         btn_rm_inv.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_rm_inv, 'Invert Select')
-        
+
         rem_grid = ttk.Frame(rem_lf)
         rem_grid.pack(fill=tk.X)
         self.sb_remove_vars = {}
@@ -111,16 +111,16 @@ class SponsorblockTabMixin:
         # Selection buttons for Mark group
         mark_ctrl = ttk.Frame(mark_lf)
         mark_ctrl.pack(fill=tk.X, pady=(0, 5))
-        
-        btn_mk_all = ttk.Button(mark_ctrl, text="Select All", command=lambda: self._set_sb_group('mark', True))
+
+        btn_mk_all = ttk.Button(mark_ctrl, text='Select All', command=lambda: self._set_sb_group('mark', True))
         btn_mk_all.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_mk_all, 'Select All')
-        
-        btn_mk_none = ttk.Button(mark_ctrl, text="Deselect All", command=lambda: self._set_sb_group('mark', False))
+
+        btn_mk_none = ttk.Button(mark_ctrl, text='Deselect All', command=lambda: self._set_sb_group('mark', False))
         btn_mk_none.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_mk_none, 'Deselect All')
-        
-        btn_mk_inv = ttk.Button(mark_ctrl, text="Invert Select", command=lambda: self._set_sb_group('mark', 'invert'))
+
+        btn_mk_inv = ttk.Button(mark_ctrl, text='Invert Select', command=lambda: self._set_sb_group('mark', 'invert'))
         btn_mk_inv.pack(side=tk.LEFT, padx=2)
         self.register_translatable_widget(btn_mk_inv, 'Invert Select')
 
@@ -156,4 +156,3 @@ class SponsorblockTabMixin:
                 var.set(not var.get())
             else:
                 var.set(state)
-

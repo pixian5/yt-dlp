@@ -3,12 +3,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-import os
 import tkinter as tk
 from tkinter import filedialog
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class UtilsMixin:
@@ -75,13 +74,13 @@ class UtilsMixin:
         self.batch_file_entry.delete(0, tk.END)
         self.batch_file_entry.insert(0, clipboard_text)
         self.batch_file_entry.focus_set()
-        
+
         # If it's a single URL and the main URL entry is empty, duplicate it there for convenience
         lines = [l.strip() for l in clipboard_text.splitlines() if l.strip()]
         if len(lines) == 1 and lines[0].startswith('http') and not self.url_entry.get().strip():
             self.url_entry.delete(0, tk.END)
             self.url_entry.insert(0, lines[0])
-            
+
         self.log_message(self.tr('Pasted playlist from clipboard.'))
 
     def browse_config_file(self):
@@ -105,7 +104,7 @@ class UtilsMixin:
         """Force metadata language choice to match current GUI language."""
         if not hasattr(self, 'current_language') or not hasattr(self, 'metadata_lang'):
             return
-            
+
         lang_to_tag = {'zh': 'zh-CN', 'en': 'en', 'ja': 'ja', 'ko': 'ko', 'ru': 'ru', 'es': 'es', 'fr': 'fr', 'de': 'de'}
         target_code = lang_to_tag.get(self.current_language, 'zh-CN')
         self.refresh_metadata_lang_values(force_code=target_code)
@@ -114,21 +113,21 @@ class UtilsMixin:
         """Update metadata_lang combobox values based on current language translation."""
         if not hasattr(self, 'metadata_lang'):
             return
-            
+
         current_val = self.metadata_lang.get()
         # Logic: If it's the first value (Default), we consider it "Auto"
         is_auto = False
         try:
             if current_val == self.metadata_lang['values'][0]:
                 is_auto = True
-        except:
+        except Exception:
             is_auto = True
 
         # Keep track of which one was selected
         sel_code = force_code
         if not sel_code and not is_auto and '(' in current_val:
             sel_code = current_val.split('(')[-1].split(')')[0]
-            
+
         new_values = [
             self.tr('Default (Auto)'),
             'Chinese (Simplified) (zh-CN)',
@@ -147,16 +146,16 @@ class UtilsMixin:
             'Hindi (hi)',
             'Vietnamese (vi)',
             'Thai (th)',
-            'Indonesian (id)'
+            'Indonesian (id)',
         ]
         self.metadata_lang['values'] = new_values
-        
+
         if sel_code:
             for val in new_values:
                 if f'({sel_code})' in val:
                     self.metadata_lang.set(val)
                     return
-        
+
         # If auto or nothing matched
         self.metadata_lang.set(new_values[0])
 
@@ -214,4 +213,3 @@ class UtilsMixin:
         if filename:
             self.cookies.delete(0, tk.END)
             self.cookies.insert(0, filename)
-

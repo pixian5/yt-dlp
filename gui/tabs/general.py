@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class GeneralTabMixin:
@@ -48,7 +48,7 @@ class GeneralTabMixin:
 
         scrollable_frame.bind(
             '<Configure>',
-            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all')),
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
@@ -119,8 +119,8 @@ class GeneralTabMixin:
 
         ttk.Label(scrollable_frame, text='Flat playlist extraction:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.extract_flat = ttk.Combobox(scrollable_frame, width=20,
-                                          values=['', 'in_playlist', 'discard_in_playlist'],
-                                          state='readonly')
+                                         values=['', 'in_playlist', 'discard_in_playlist'],
+                                         state='readonly')
         self.extract_flat.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -141,4 +141,3 @@ class GeneralTabMixin:
         self.max_downloads = ttk.Entry(scrollable_frame, width=10)
         self.max_downloads.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-

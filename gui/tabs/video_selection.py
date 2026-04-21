@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class VideoSelectionMixin:
@@ -133,4 +133,3 @@ class VideoSelectionMixin:
         ttk.Checkbutton(scrollable_frame, text='No break on existing (--no-break-on-existing)',
                         variable=self.no_break_on_existing).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-

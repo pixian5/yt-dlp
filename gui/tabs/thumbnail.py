@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class ThumbnailTabMixin:
@@ -49,8 +49,7 @@ class ThumbnailTabMixin:
 
         ttk.Label(frame, text='Convert thumbnails format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.convert_thumbnails = ttk.Combobox(frame, width=15,
-                                                values=['', 'jpg', 'png', 'webp'],
-                                                state='readonly')
+                                               values=['', 'jpg', 'png', 'webp'],
+                                               state='readonly')
         self.convert_thumbnails.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-

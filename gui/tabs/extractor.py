@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class ExtractorTabMixin:
@@ -64,8 +64,8 @@ class ExtractorTabMixin:
 
         ttk.Label(frame, text='Cookies from browser:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.cookies_from_browser = ttk.Combobox(frame, width=20,
-                                                  values=['', 'chrome', 'firefox', 'safari', 'edge', 'opera', 'brave', 'chromium', 'vivaldi'],
-                                                  state='readonly')
+                                                 values=['', 'chrome', 'firefox', 'safari', 'edge', 'opera', 'brave', 'chromium', 'vivaldi'],
+                                                 state='readonly')
         self.cookies_from_browser.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -76,4 +76,3 @@ class ExtractorTabMixin:
         self.cookies.pack(side=tk.LEFT)
         ttk.Button(cookies_frame, text='Browse...', command=self.browse_cookies).pack(side=tk.LEFT, padx=(5, 0))
         row += 1
-

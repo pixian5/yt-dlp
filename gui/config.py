@@ -8,7 +8,7 @@ import os
 from tkinter import filedialog, messagebox
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class ConfigMixin:
@@ -34,7 +34,7 @@ class ConfigMixin:
         """Load configuration from file"""
         if os.path.exists(self.config_file):
             try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.config_file, encoding='utf-8') as f:
                     self.config = json.load(f)
             except Exception as e:
                 print(f'Error loading config: {e}')
@@ -55,7 +55,7 @@ class ConfigMixin:
             filetypes=[(self.tr('JSON Files'), '*.json'), (self.tr('All Files'), '*.*')])
         if filename:
             try:
-                with open(filename, 'r', encoding='utf-8') as f:
+                with open(filename, encoding='utf-8') as f:
                     self.config = json.load(f)
                 self.apply_config()
                 messagebox.showinfo(self.tr('Success'), self.tr('Configuration loaded successfully!'))
@@ -81,7 +81,6 @@ class ConfigMixin:
         """Get current configuration from GUI"""
         import tkinter as tk
         from tkinter import ttk, scrolledtext
-        from .constants import GUI_DEFAULT_STATE
 
         self.ensure_all_tabs_built()
 

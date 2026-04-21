@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class SubtitleTabMixin:
@@ -65,8 +65,8 @@ class SubtitleTabMixin:
 
         ttk.Label(scrollable_frame, text='Subtitle format:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.sub_format = ttk.Combobox(scrollable_frame, width=20,
-                                        values=['', 'srt', 'vtt', 'ass', 'lrc'],
-                                        state='readonly')
+                                       values=['', 'srt', 'vtt', 'ass', 'lrc'],
+                                       state='readonly')
         self.sub_format.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -95,4 +95,3 @@ class SubtitleTabMixin:
         ttk.Checkbutton(scrollable_frame, text='Do not embed thumbnail (--no-embed-thumbnail)',
                         variable=self.no_embed_thumbnail).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-

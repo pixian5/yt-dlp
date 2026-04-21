@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class DownloadTabMixin:
@@ -83,8 +83,8 @@ class DownloadTabMixin:
 
         ttk.Label(scrollable_frame, text='External downloader:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
         self.external_downloader = ttk.Combobox(scrollable_frame, width=20,
-                                                 values=['', 'aria2c', 'avconv', 'axel', 'curl', 'ffmpeg', 'httpie', 'wget'],
-                                                 state='readonly')
+                                                values=['', 'aria2c', 'avconv', 'axel', 'curl', 'ffmpeg', 'httpie', 'wget'],
+                                                state='readonly')
         self.external_downloader.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
 
@@ -107,4 +107,3 @@ class DownloadTabMixin:
         ttk.Checkbutton(scrollable_frame, text='Use MPEG-TS container for HLS (--hls-use-mpegts)',
                         variable=self.hls_use_mpegts).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-

@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class FilesystemTabMixin:
@@ -180,4 +180,3 @@ class FilesystemTabMixin:
         ttk.Checkbutton(scrollable_frame, text='Delete cache directory contents (--rm-cache-dir)',
                         variable=self.rm_cache_dir).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
-

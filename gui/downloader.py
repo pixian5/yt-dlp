@@ -11,12 +11,11 @@ import subprocess
 import sys
 import threading
 import tempfile
-import shutil
 import tkinter as tk
 from tkinter import messagebox
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class DownloaderMixin:
@@ -239,14 +238,14 @@ class DownloaderMixin:
             'ko': 'ko',
             'es': 'es',
             'fr': 'fr',
-            'de': 'de'
+            'de': 'de',
         }
         gui_lang_code = getattr(self, 'current_language', 'zh')
         lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
             lang_to_use = self.metadata_lang.get().split('(')[-1].split(')')[0]
-            
+
         args.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
         # SHOTGUN APPROACH: Inject HTTP header to force server response language
         args.extend(['--add-header', f'Accept-Language:{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'])
@@ -601,16 +600,16 @@ class DownloaderMixin:
             args.append('--sponsorblock-mark')
         if self.sponsorblock_remove.get():
             args.append('--sponsorblock-remove')
-            
+
         # Collect categories from checkboxes
         selected_remove_cats = [cat for cat, var in self.sb_remove_vars.items() if var.get()]
         if selected_remove_cats:
             args.extend(['--sponsorblock-remove', ','.join(selected_remove_cats)])
-            
+
         selected_mark_cats = [cat for cat, var in self.sb_mark_vars.items() if var.get()]
         if selected_mark_cats:
             args.extend(['--sponsorblock-mark', ','.join(selected_mark_cats)])
-            
+
         if self.sponsorblock_chapter_title.get():
             args.extend(['--sponsorblock-chapter-title', self.sponsorblock_chapter_title.get()])
         if self.no_sponsorblock.get():
@@ -622,10 +621,10 @@ class DownloaderMixin:
         extractor_args = []
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
             extractor_args.append(f'youtube:lang={self.metadata_lang.get()}')
-        
+
         if self.extractor_args.get():
             extractor_args.append(self.extractor_args.get())
-        
+
         if extractor_args:
             args.extend(['--extractor-args', '; '.join(extractor_args)])
 
@@ -672,7 +671,7 @@ class DownloaderMixin:
                     self._temp_batch_files.append(temp_path)
                 except Exception as e:
                     self.log_message(f'Error creating temporary batch file: {e}')
-                    args.extend(['-a', batch_file]) # Fallback
+                    args.extend(['-a', batch_file])  # Fallback
             else:
                 args.extend(['-a', batch_file])
         elif url:
@@ -693,7 +692,7 @@ class DownloaderMixin:
     def generate_command(self):
         """Generate and display the yt-dlp command"""
         args = self.build_command_args()
-        cmd = [sys.executable, '-m', 'yt_dlp'] + args
+        cmd = [sys.executable, '-m', 'yt_dlp', *args]
         cmd_str = ' '.join(f'"{arg}"' if ' ' in arg else arg for arg in cmd)
 
         self.generated_cmd.config(state=tk.NORMAL)
@@ -714,18 +713,18 @@ class DownloaderMixin:
         try:
             total = len(tasks)
             for i, (idx, args) in enumerate(tasks):
-                self.log_message(self.translate_concat(f'[{i+1}/{total}] Download Task: Index ', idx))
-                self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i+1}/{total}'))
+                self.log_message(self.translate_concat(f'[{i + 1}/{total}] Download Task: Index ', idx))
+                self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
-                full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github'] + args
-                
+                full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
+
                 self.current_process = subprocess.Popen(
                     full_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
                     bufsize=1,
-                    preexec_fn=os.setpgrp # Create process group for easy mass-kill
+                    preexec_fn=os.setpgrp,  # noqa: PLW1509 Create process group for easy mass-kill
                 )
                 process = self.current_process
 
@@ -735,18 +734,18 @@ class DownloaderMixin:
                             self.log_message(line.rstrip())
 
                 process.wait()
-                
+
                 if process.returncode != 0 and process.returncode not in (15, -15):
                     self.log_message(self.translate_concat('Task failed with code ', process.returncode))
-                    if "n challenge solving failed" in "".join(self.console.get("1.0", tk.END)):
-                        self.log_message("\n[!] 提示：检测到 JavaScript 运行环境缺失。")
+                    if 'n challenge solving failed' in ''.join(self.console.get('1.0', tk.END)):
+                        self.log_message('\n[!] 提示：检测到 JavaScript 运行环境缺失。')
                         self.log_message("[!] 请在终端运行 'brew install node' 以修复此下载报错。")
                     # We continue even if one fails
-                
+
                 if not hasattr(self, 'current_process') or self.current_process is None:
                     # User likely clicked Stop
                     break
-            
+
             self.log_message(self.tr('All tasks processed.'))
             self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
 
@@ -771,20 +770,20 @@ class DownloaderMixin:
     def stop_download(self):
         if hasattr(self, 'current_process') and self.current_process:
             p = self.current_process
-            self.current_process = None # Signal to stop loop
+            self.current_process = None  # Signal to stop loop
             self.log_message(self.tr('Stopping download...'))
-            
+
             try:
                 # Kill the entire process group (including child processes like ffmpeg)
                 os.killpg(os.getpgid(p.pid), signal.SIGTERM)
                 p.terminate()
                 p.kill()
             except Exception as e:
-                self.log_message(f"[DEBUG] Stop error: {e}")
-            
+                self.log_message(f'[DEBUG] Stop error: {e}')
+
             # Popup for cleanup
             msg = self.tr('Download stopped. Would you like to delete partially downloaded files?')
-            if messagebox.askyesno(self.tr("Stop"), msg):
+            if messagebox.askyesno(self.tr('Stop'), msg):
                 self.cleanup_partial_files()
         else:
             self.log_message(self.tr('No download currently running.'))
@@ -794,24 +793,24 @@ class DownloaderMixin:
         output_dir = self.output_dir.get().strip()
         if not output_dir or not os.path.exists(output_dir):
             return
-            
+
         count = 0
-        self.log_message(self.tr("Cleaning up partial files..."))
+        self.log_message(self.tr('Cleaning up partial files...'))
         try:
             for filename in os.listdir(output_dir):
-                # yt-dlp partial files usually end with .part, .ytdl 
+                # yt-dlp partial files usually end with .part, .ytdl
                 # or have fragments like .f137.part
-                if filename.endswith('.part') or filename.endswith('.ytdl') or '.f' in filename and '.part' in filename:
+                if filename.endswith(('.part', '.ytdl')) or ('.f' in filename and '.part' in filename):
                     file_path = os.path.join(output_dir, filename)
                     if os.path.isfile(file_path):
                         try:
                             os.remove(file_path)
                             count += 1
                         except Exception as e:
-                            self.log_message(f"Failed to remove {filename}: {e}")
-            self.log_message(f"Cleanup finished. Removed {count} files.")
+                            self.log_message(f'Failed to remove {filename}: {e}')
+            self.log_message(f'Cleanup finished. Removed {count} files.')
         except Exception as e:
-            self.log_message(f"Error during cleanup: {e}")
+            self.log_message(f'Error during cleanup: {e}')
 
     def start_download(self):
         """Start download in a separate thread"""
@@ -827,7 +826,7 @@ class DownloaderMixin:
             self.log_message(traceback.format_exc())
             self._restore_download_button()
             return
-        
+
         if not base_args or (not url and not self.batch_file_entry.get().strip()):
             self.log_message('[DEBUG] No URL or args — showing warning')
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
@@ -839,10 +838,10 @@ class DownloaderMixin:
 
         output_dir = self.output_dir.get().strip()
         self.log_message(f'[DEBUG] output_dir={output_dir!r}')
-        
+
         playlist_parsed_url = getattr(self, 'playlist_parsed_url', None)
         self.log_message(f'[DEBUG] URL match check: Input="{url}", Parsed="{playlist_parsed_url}"')
-        
+
         tasks = []
         # ONLY use playlist tasks if the URL matches what we parsed!
         if hasattr(self, 'playlist_tree') and playlist_parsed_url and url == playlist_parsed_url:
@@ -853,10 +852,10 @@ class DownloaderMixin:
                 vals = self.playlist_tree.item(item, 'values')
                 checked = vals[0] == '☑'
                 visual_idx = int(vals[1])
-                
+
                 if checked:
                     visual_idx = int(vals[1])
-                    gui_title = str(vals[2]) # Defined here!
+                    gui_title = str(vals[2])  # Defined here!
                     original_idx = vis_to_orig_map.get(visual_idx, visual_idx)
                     task_args = []
                     skip = False
@@ -865,25 +864,25 @@ class DownloaderMixin:
                             skip = False
                             continue
                         # EXCLUDE batch file and redundant playlist items from individual tasks
-                        if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse', 
+                        if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse',
                                    '-o', '-P', '--paths', '-a', '--batch-file'):
                             if arg in ('--playlist-items', '-o', '-P', '--paths', '-a', '--batch-file'):
                                 skip = True
                             continue
-                        if arg == url: # Don't add the main URL yet
+                        if arg == url:  # Don't add the main URL yet
                             continue
                         task_args.append(arg)
-                    
+
                     # Always use the specific playlist URL for individual tasks
                     task_args.append(url)
                     filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
                     # Remove unsave characters
-                    filename_tpl = "".join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
-                    
+                    filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
+
                     # Handle playlist subfolder
                     final_output_dir = output_dir
                     if self.playlist_subdir.get() and getattr(self, 'current_playlist_metadata_title', None):
-                        folder_name = "".join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
+                        folder_name = ''.join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
                         if folder_name:
                             final_output_dir = os.path.join(output_dir, folder_name)
                             if not os.path.exists(final_output_dir):
@@ -893,7 +892,7 @@ class DownloaderMixin:
                     task_args.extend(['--playlist-items', str(original_idx)])
                     task_args.extend(['-o', out_path])
                     tasks.append((visual_idx, task_args))
-        
+
         # If no playlist tasks were built (not a playlist or nothing checked), treat as single/batch
         if not tasks:
             tasks.append(('Single', base_args))
@@ -905,21 +904,20 @@ class DownloaderMixin:
         thread = threading.Thread(target=self.run_ytdlp, args=(tasks,), daemon=True)
         thread.start()
 
-
     def parse_playlist(self):
         url = self.url_entry.get().strip()
         batch = self.batch_file_entry.get().strip()
-        
+
         # If main URL is empty but batch has a URL, use it
         if not url and batch.startswith('http') and '\n' not in batch:
             url = batch
             self.url_entry.delete(0, tk.END)
             self.url_entry.insert(0, url)
-        
+
         if not url:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
-        
+
         self.console.config(state=tk.NORMAL)
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
@@ -930,15 +928,15 @@ class DownloaderMixin:
     def _parse_playlist_only(self, url):
         try:
             self.ensure_all_tabs_built()
-            self.log_message(self.tr("Checking if URL is a playlist..."))
+            self.log_message(self.tr('Checking if URL is a playlist...'))
             # ADDED --no-cache-dir to ensure we get fresh language-specific metadata
             cmd = [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', '--no-cache-dir']
-            
+
             # MAP GUI Language to Metadata Language
             lang_map = {'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'}
             gui_lang_code = getattr(self, 'current_language', 'zh')
             lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
-            
+
             self.log_message(f'[DEBUG] Parsing playlist metadata using interface-linked language: {lang_to_use}')
             cmd.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
             cmd.extend(['--add-header', f'Accept-Language:{lang_to_use},zh-CN;q=0.9,zh;q=0.8'])
@@ -957,15 +955,15 @@ class DownloaderMixin:
                 cmd.extend(['--referer', self.referer.get()])
             if self.add_header.get():
                 cmd.extend(['--add-header', self.add_header.get()])
-            
+
             cmd.append(url)
-            
+
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
-                bufsize=1
+                bufsize=1,
             )
             stdout, stderr = process.communicate()
             if process.returncode == 0:
@@ -977,30 +975,30 @@ class DownloaderMixin:
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
                 else:
-                    self.log_message(self.tr("Not a playlist or no entries found."))
+                    self.log_message(self.tr('Not a playlist or no entries found.'))
             else:
                 self.log_message(f'[ERROR] Parsing failed: {stderr.strip()}')
-                self.log_message(self.tr("Failed to parse playlist."))
+                self.log_message(self.tr('Failed to parse playlist.'))
         except Exception as e:
             self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
         self.status_var.set(self.tr('Ready'))
 
     def _show_playlist_tab(self, temp_title):
-        self.log_message(self.tr("Playlist detected. Please select videos to download."))
+        self.log_message(self.tr('Playlist detected. Please select videos to download.'))
         self.status_var.set(self.tr('Playlist detected'))
         if hasattr(self, 'playlist_tree'):
             self.notebook.select(self.playlist_tab_frame)
             self.playlist_tree.delete(*self.playlist_tree.get_children())
-            
+
             entries = self.playlist_entries_data
             filtered_entries = []
             for i, entry in enumerate(entries):
-                title = entry.get('title') or entry.get('id') or f'Video {i+1}'
+                title = entry.get('title') or entry.get('id') or f'Video {i + 1}'
                 availability = entry.get('availability', '')
                 is_private = (
-                    title in ('[Private video]', '[私享视频]', '[私有视频]', '[Deleted video]', '[已删除的视频]') or 
-                    availability == 'private' or
-                    entry.get('title') is None
+                    title in ('[Private video]', '[私享视频]', '[私有视频]', '[Deleted video]', '[已删除的视频]')
+                    or availability == 'private'
+                    or entry.get('title') is None
                 )
                 if is_private and self.playlist_exclude_private_var.get():
                     continue
@@ -1008,7 +1006,7 @@ class DownloaderMixin:
 
             if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
                 filtered_entries = list(reversed(filtered_entries))
-            
+
             total_visible = len(filtered_entries)
             self.vis_to_orig = {}
             for j, (original_idx, title) in enumerate(filtered_entries):
@@ -1017,12 +1015,11 @@ class DownloaderMixin:
                 visual_idx = total_visible - j
                 self.vis_to_orig[visual_idx] = original_idx
                 self.playlist_tree.insert('', tk.END, values=('☑', visual_idx, title))
-            
+
             # Reset headers
             self.playlist_tree.heading('status', text=' ')
             self.playlist_tree.heading('index', text='#')
             self.playlist_tree.heading('title', text=self.tr('Title'))
-
 
     def list_formats(self):
         """List available formats for the video"""
@@ -1058,14 +1055,14 @@ class DownloaderMixin:
             while True:
                 msg = self.log_queue.get_nowait()
                 self._log_message_internal(msg)
-        except Exception: # queue.Empty
+        except Exception:  # queue.Empty
             pass
         self.root.after(100, self._start_log_watcher)
 
     def _log_message_internal(self, message):
         """Internal method to update the console text widget and redirect progress to status bar"""
         clean_msg = message.strip()
-        
+
         # Redirect [download] progress to the status bar instead of the console
         # Typically looks like: [download]  1.2% of 10.00MiB at ...
         if clean_msg.startswith('[download]') and '%' in clean_msg:
@@ -1090,7 +1087,6 @@ class DownloaderMixin:
         msg_str = str(message)
         # Always output to terminal for visibility if GUI logs are failing or slow
         print(msg_str)
-        
+
         if hasattr(self, 'log_queue'):
             self.log_queue.put(msg_str)
-

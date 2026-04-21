@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk
 
 if TYPE_CHECKING:
-    from gui.app import YtDlpGUI
+    pass
 
 
 class NetworkTabMixin:
@@ -114,4 +114,3 @@ class NetworkTabMixin:
         self.fragment_retries = ttk.Entry(scrollable_frame, width=10)
         self.fragment_retries.grid(row=row, column=1, sticky=tk.W, pady=5, padx=5)
         row += 1
-
