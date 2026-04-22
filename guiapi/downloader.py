@@ -536,7 +536,13 @@ class DownloaderMixin:
         info = ''
 
         if status == 'downloading':
-            percent = d.get('percentage', 0)
+            downloaded = d.get('downloaded_bytes', 0)
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            
+            percent = 0.0
+            if total:
+                percent = (downloaded / total) * 100
+                
             speed = d.get('speed', 0)
             eta = d.get('eta', 0)
             info = f"Downloading: {percent:.1f}% | Speed: {self._format_speed(speed)} | ETA: {eta}s"
