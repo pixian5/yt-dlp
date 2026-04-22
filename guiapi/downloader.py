@@ -1,12 +1,16 @@
-"""Download execution logic using yt-dlp Python API"""
+"""Download execution logic"""
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
+import atexit
 import json
 import os
+import signal
+import subprocess
 import sys
 import threading
+import tempfile
 import tkinter as tk
 from tkinter import messagebox
 
@@ -15,8 +19,10 @@ if TYPE_CHECKING:
 
 
 class DownloaderMixin:
-    """Mixin for download execution using YoutubeDL API. Requires YtDlpGUI base class."""
+    """Mixin for download execution. Requires YtDlpGUI base class."""
 
+    # Type hints for mixin attributes (provided by YtDlpGUI)
+    # Using __getattr__ pattern to allow dynamic attribute access
     if TYPE_CHECKING:
         # Core methods and attributes
         tr: Any
@@ -36,10 +42,12 @@ class DownloaderMixin:
         playlist_subdir: Any
         ensure_all_tabs_built: Any
         root: Any
+        _download_process: Any
+        _temp_files: Any
         url_var: Any
         save_config: Any
         current_language: Any
-        # All GUI control variables (simplified - add more as needed)
+        # All GUI control variables
         metadata_lang: Any
         ignore_errors: Any
         no_warnings: Any
@@ -91,13 +99,12 @@ class DownloaderMixin:
         break_on_reject: Any
         no_break_on_existing: Any
         concurrent_fragments: Any
-        limit_rate: Any
         buffer_size: Any
         http_chunk_size: Any
-        no_resize_buffer: Any
-        test: Any
         external_downloader: Any
         external_downloader_args: Any
+        no_resize_buffer: Any
+        test: Any
         hls_prefer_native: Any
         hls_prefer_ffmpeg: Any
         hls_use_mpegts: Any
@@ -115,46 +122,84 @@ class DownloaderMixin:
         write_description: Any
         write_info_json: Any
         write_annotations: Any
-        # Video format options
-        video_format: Any
+        write_comments: Any
+        load_info_json: Any
+        cache_dir: Any
+        no_cache_dir: Any
+        rm_cache_dir: Any
+        format: Any
         format_sort: Any
-        video_quality: Any
-        audio_quality: Any
         prefer_free_formats: Any
-        all_formats: Any
-        prefer_avc: Any
-        # Subtitle options
-        write_subtitles: Any
+        check_formats: Any
+        merge_output_format: Any
+        video_multistreams: Any
+        audio_multistreams: Any
+        write_subs: Any
         write_auto_subs: Any
-        subtitles_langs: Any
-        subtitles_format: Any
+        list_subs: Any
+        sub_format: Any
+        sub_langs: Any
         embed_subs: Any
-        # Audio options
+        no_embed_subs: Any
+        embed_thumbnail: Any
+        no_embed_thumbnail: Any
+        username: Any
+        password: Any
+        twofactor: Any
+        netrc: Any
+        video_password: Any
+        ap_mso: Any
+        ap_username: Any
+        ap_password: Any
+        client_certificate: Any
+        client_certificate_key: Any
+        client_certificate_password: Any
         extract_audio: Any
         audio_format: Any
         audio_quality: Any
-        keep_video: Any
-        # Post-processing options
-        write_thumbnail: Any
-        list_thumbnails: Any
-        embed_thumbnail: Any
-        add_metadata: Any
-        parse_metadata: Any
-        xattrs: Any
-        fixup_policy: Any
-        prefer_ffmpeg: Any
-        ffmpeg_location: Any
-        exec_before_dl: Any
-        exec_after_dl: Any
-        convert_subs: Any
-        # Thumbnail options
-        embed_thumbnail: Any
-        # More...
-        ffmpeg_location: Any
-        preferred_hls: Any
-        preferred_dash: Any
-        remux_video: Any
         recode_video: Any
+        remux_video: Any
+        keep_video: Any
+        no_keep_video: Any
+        embed_metadata: Any
+        embed_chapters: Any
+        embed_info_json: Any
+        add_metadata: Any
+        metadata_from_title: Any
+        parse_metadata: Any
+        ffmpeg_location: Any
+        postprocessor_args: Any
+        write_thumbnail: Any
+        write_all_thumbnails: Any
+        list_thumbnails: Any
+        convert_thumbnails: Any
+        quiet: Any
+        verbose: Any
+        simulate: Any
+        skip_download: Any
+        get_title: Any
+        get_id: Any
+        get_url: Any
+        get_thumbnail: Any
+        get_description: Any
+        get_duration: Any
+        get_filename: Any
+        get_format: Any
+        dump_json: Any
+        dump_single_json: Any
+        print_json: Any
+        no_progress: Any
+        console_title: Any
+        progress_template: Any
+        encoding: Any
+        no_check_certificate: Any
+        prefer_insecure: Any
+        user_agent: Any
+        referer: Any
+        add_header: Any
+        bidi_workaround: Any
+        sleep_requests: Any
+        legacy_server_connect: Any
         sponsorblock_mark: Any
         sponsorblock_remove: Any
         sponsorblock_chapter_title: Any
@@ -169,465 +214,537 @@ class DownloaderMixin:
         hls_split_discontinuity: Any
         cookies_from_browser: Any
         cookies: Any
-        # Quiet/Verbose
-        quiet: Any
-        verbose: Any
-        # Authentication
-        username: Any
-        password: Any
-        twofactor: Any
-        netrc: Any
-        netrc_location: Any
-        video_password: Any
-        ap_username: Any
-        ap_password: Any
-        ap_mso: Any
-        client_certificate: Any
-        client_certificate_key: Any
-        client_certificate_password: Any
+        raw_args: Any
+        generated_cmd: Any
+        log_queue: Any
+        limit_rate: Any
+        notebook: Any
+        playlist_tab_frame: Any
+        playlist_entries_data: Any
+        playlist_exclude_private_var: Any
+        playlist_reverse_var: Any
 
-    def __init__(self):
-        self._ydl = None
-        self._stop_requested = False
-
-    def build_ydl_opts(self) -> dict:
-        """Build yt-dlp options dictionary from GUI settings"""
+    def build_command_args(self):
+        """Build yt-dlp command arguments from GUI settings"""
         self.ensure_all_tabs_built()
-        opts = {}
+        args = []
 
-        # 1. 统一语言映射逻辑
+        # Map GUI internal language codes to metadata language codes
         lang_map = {
-            'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 
-            'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'
+            'zh': 'zh-CN',
+            'en': 'en',
+            'ru': 'ru',
+            'ja': 'ja',
+            'ko': 'ko',
+            'es': 'es',
+            'fr': 'fr',
+            'de': 'de',
         }
         gui_lang_code = getattr(self, 'current_language', 'zh')
         lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
-        # 2. 从界面选择中提取语言代码
-        if hasattr(self, 'metadata_lang') and self.metadata_lang.get():
-            val = self.metadata_lang.get()
-            if val and val != self.tr('Default (Auto)'):
-                lang_to_use = val.split('(')[-1].split(')')[0] if '(' in val else val
+        if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
+            lang_to_use = self.metadata_lang.get().split('(')[-1].split(')')[0]
 
-        # 3. 构建 extractor_args
-        # 修复：同时为 youtube 和 youtube:tab (播放列表) 设置语言
-        final_extractor_args = {}
-        
-        if lang_to_use:
-            # 确保使用完整的语言代码，并包装在列表中，防止 yt-dlp 将其迭代为单个字符(如 'z')
-            final_extractor_args['youtube'] = {'lang': [lang_to_use]}
-            final_extractor_args['youtube:tab'] = {'lang': [lang_to_use]}
+        args.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
+        # SHOTGUN APPROACH: Inject HTTP header to force server response language
+        args.extend(['--add-header', f'Accept-Language:{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'])
 
-
-        if hasattr(self, 'extractor_args') and hasattr(self.extractor_args, 'get'):
-            raw_args = self.extractor_args.get().strip()
-            # 格式解析：extractor:param=val
-            if raw_args:
-                for pair in raw_args.split():
-                    if ':' in pair:
-                        ext_key, remainder = pair.split(':', 1)
-                        if ext_key not in final_extractor_args:
-                            final_extractor_args[ext_key] = {}
-                        
-                        if '=' in remainder:
-                            param_key, param_val = remainder.split('=', 1)
-                            # yt-dlp API 期望参数值是一个列表
-                            if param_key not in final_extractor_args[ext_key]:
-                                final_extractor_args[ext_key][param_key] = []
-                            if isinstance(final_extractor_args[ext_key][param_key], list):
-                                final_extractor_args[ext_key][param_key].append(param_val)
-                            else:
-                                # Fallback if it was already set by lang logic as a single-element list
-                                final_extractor_args[ext_key][param_key] = [param_val]
-                        else:
-                            # 只有 key:param 形式，没有 =val
-                            final_extractor_args[ext_key][remainder] = [True]
-        
-        if final_extractor_args:
-            opts['extractor_args'] = final_extractor_args
-
-        # HTTP headers
-        opts['http_headers'] = {'Accept-Language': f'{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'}
+        # URL or batch file
+        url = self.url_entry.get().strip()
+        batch_file = self.batch_file_entry.get().strip()
 
         # General options
         if self.ignore_errors.get():
-            opts['ignoreerrors'] = True
+            args.append('--ignore-errors')
         if self.no_warnings.get():
-            opts['no_warnings'] = True
+            args.append('--no-warnings')
         if self.abort_on_error.get():
-            opts['abort_on_error'] = True
+            args.append('--abort-on-error')
         if self.no_playlist.get():
-            opts['noplaylist'] = True
+            args.append('--no-playlist')
         if self.yes_playlist.get():
-            opts['yesplaylist'] = True
+            args.append('--yes-playlist')
         if not self.include_private_videos.get():
-            opts['compat_opts'] = ['no-youtube-unavailable-videos']
+            args.extend(['--compat-options', 'no-youtube-unavailable-videos'])
         if self.mark_watched.get():
-            opts['mark_watched'] = True
+            args.append('--mark-watched')
         if self.no_mark_watched.get():
-            opts['mark_watched'] = False
+            args.append('--no-mark-watched')
 
         if self.default_search.get():
-            opts['default_search'] = self.default_search.get()
+            args.extend(['--default-search', self.default_search.get()])
+        if self.config_location.get():
+            args.extend(['--config-location', self.config_location.get()])
         if self.extract_flat.get():
-            opts['extract_flat'] = self.extract_flat.get()
+            args.extend(['--flat-playlist', self.extract_flat.get()])
         if self.age_limit.get():
-            opts['age_limit'] = int(self.age_limit.get())
+            args.extend(['--age-limit', self.age_limit.get()])
         if self.download_archive.get():
-            opts['download_archive'] = self.download_archive.get()
+            args.extend(['--download-archive', self.download_archive.get()])
         if self.max_downloads.get():
-            opts['max_downloads'] = int(self.max_downloads.get())
+            args.extend(['--max-downloads', self.max_downloads.get()])
 
         # Network options
         if self.proxy.get():
-            opts['proxy'] = self.proxy.get()
+            args.extend(['--proxy', self.proxy.get()])
         if self.socket_timeout.get():
-            opts['socket_timeout'] = int(self.socket_timeout.get())
+            args.extend(['--socket-timeout', self.socket_timeout.get()])
         if self.source_address.get():
-            opts['source_address'] = self.source_address.get()
+            args.extend(['--source-address', self.source_address.get()])
         if self.force_ipv4.get():
-            opts['force_ipv4'] = True
+            args.append('--force-ipv4')
         if self.force_ipv6.get():
-            opts['force_ipv6'] = True
+            args.append('--force-ipv6')
         if self.enable_file_urls.get():
-            opts['enable_file_urls'] = True
+            args.append('--enable-file-urls')
         if self.sleep_interval.get():
-            opts['sleep_interval'] = int(self.sleep_interval.get())
+            args.extend(['--sleep-interval', self.sleep_interval.get()])
         if self.max_sleep_interval.get():
-            opts['max_sleep_interval'] = int(self.max_sleep_interval.get())
+            args.extend(['--max-sleep-interval', self.max_sleep_interval.get()])
         if self.sleep_interval_requests.get():
-            opts['sleep_interval_requests'] = int(self.sleep_interval_requests.get())
+            args.extend(['--sleep-requests', self.sleep_interval_requests.get()])
         if self.sleep_interval_subtitles.get():
-            opts['sleep_interval_subtitles'] = int(self.sleep_interval_subtitles.get())
+            args.extend(['--sleep-subtitles', self.sleep_interval_subtitles.get()])
         if self.rate_limit.get():
-            opts['ratelimit'] = self.rate_limit.get()
+            args.extend(['--limit-rate', self.rate_limit.get()])
         if self.throttled_rate.get():
-            opts['throttledratelimit'] = self.throttled_rate.get()
+            args.extend(['--throttled-rate', self.throttled_rate.get()])
         if self.retries.get():
-            opts['retries'] = self.retries.get()
+            args.extend(['--retries', self.retries.get()])
         if self.fragment_retries.get():
-            opts['fragment_retries'] = self.fragment_retries.get()
+            args.extend(['--fragment-retries', self.fragment_retries.get()])
 
         # Geo-restriction
         if self.geo_verification_proxy.get():
-            opts['geo_verification_proxy'] = self.geo_verification_proxy.get()
+            args.extend(['--geo-verification-proxy', self.geo_verification_proxy.get()])
         if self.geo_bypass.get():
-            opts['geo_bypass'] = True
+            args.append('--geo-bypass')
         if self.no_geo_bypass.get():
-            opts['geo_bypass'] = False
+            args.append('--no-geo-bypass')
         if self.geo_bypass_country.get():
-            opts['geo_bypass_country'] = self.geo_bypass_country.get()
+            args.extend(['--geo-bypass-country', self.geo_bypass_country.get()])
         if self.geo_bypass_ip_block.get():
-            opts['geo_bypass_ip_block'] = self.geo_bypass_ip_block.get()
+            args.extend(['--geo-bypass-ip-block', self.geo_bypass_ip_block.get()])
 
         # Video selection
-        # 修复：优先从“播放列表”选项卡的勾选状态中获取项目
-        items_to_download = []
-        current_url = self.url_entry.get().strip() if hasattr(self, 'url_entry') else ''
-        
-        # 如果当前 URL 就是解析过的播放列表，则读取勾选状态
-        if (hasattr(self, 'playlist_parsed_url') and self.playlist_parsed_url == current_url 
-            and hasattr(self, 'playlist_tree')):
-            
-            for item in self.playlist_tree.get_children():
-                values = self.playlist_tree.item(item, 'values')
-                # values[0]=☑, values[1]=显示序号, values[2]=标题, values[3]=真实索引
-                if values and len(values) >= 4 and values[0] == '☑':
-                    real_idx = values[3]
-                    items_to_download.append(str(real_idx))
-        
-        if items_to_download:
-            opts['playlist_items'] = ','.join(items_to_download)
-            self.log_message(self.translate_concat('Selected playlist items: ', opts['playlist_items']))
-        elif hasattr(self, 'playlist_items') and self.playlist_items.get():
-            # 回退到手动输入的项目范围
-            opts['playlist_items'] = self.playlist_items.get()
+        if self.playlist_items.get():
+            args.extend(['--playlist-items', self.playlist_items.get()])
         if self.playlist_start.get():
-            opts['playliststart'] = int(self.playlist_start.get())
+            args.extend(['--playlist-start', self.playlist_start.get()])
         if self.playlist_end.get():
-            opts['playlistend'] = int(self.playlist_end.get())
+            args.extend(['--playlist-end', self.playlist_end.get()])
         if self.match_title.get():
-            opts['matchtitle'] = self.match_title.get()
+            args.extend(['--match-title', self.match_title.get()])
         if self.reject_title.get():
-            opts['rejecttitle'] = self.reject_title.get()
+            args.extend(['--reject-title', self.reject_title.get()])
         if self.min_filesize.get():
-            opts['min_filesize'] = self.min_filesize.get()
+            args.extend(['--min-filesize', self.min_filesize.get()])
         if self.max_filesize.get():
-            opts['max_filesize'] = self.max_filesize.get()
+            args.extend(['--max-filesize', self.max_filesize.get()])
         if self.date.get():
-            from yt_dlp.utils import DateRange
-            opts['daterange'] = DateRange(self.date.get(), self.date.get())
+            args.extend(['--date', self.date.get()])
         if self.datebefore.get():
-            opts['datebefore'] = self.datebefore.get()
+            args.extend(['--datebefore', self.datebefore.get()])
         if self.dateafter.get():
-            opts['dateafter'] = self.dateafter.get()
+            args.extend(['--dateafter', self.dateafter.get()])
         if self.min_views.get():
-            opts['min_views'] = int(self.min_views.get())
+            args.extend(['--min-views', self.min_views.get()])
         if self.max_views.get():
-            opts['max_views'] = int(self.max_views.get())
+            args.extend(['--max-views', self.max_views.get()])
         if self.match_filter.get():
-            opts['match_filter'] = self.match_filter.get()
+            args.extend(['--match-filter', self.match_filter.get()])
         if self.break_on_existing.get():
-            opts['break_on_existing'] = True
+            args.append('--break-on-existing')
         if self.break_on_reject.get():
-            opts['break_on_reject'] = True
+            args.append('--break-on-reject')
+        if self.no_break_on_existing.get():
+            args.append('--no-break-on-existing')
 
         # Download options
         if self.concurrent_fragments.get():
-            opts['concurrent_fragment_downloads'] = int(self.concurrent_fragments.get())
+            args.extend(['--concurrent-fragments', self.concurrent_fragments.get()])
         if self.limit_rate.get():
-            opts['ratelimit'] = self.limit_rate.get()
+            args.extend(['--limit-rate', self.limit_rate.get()])
         if self.buffer_size.get():
-            opts['buffersize'] = self.buffer_size.get()
+            args.extend(['--buffer-size', self.buffer_size.get()])
         if self.http_chunk_size.get():
-            opts['http_chunk_size'] = self.http_chunk_size.get()
+            args.extend(['--http-chunk-size', self.http_chunk_size.get()])
         if self.no_resize_buffer.get():
-            opts['noresizebuffer'] = True
+            args.append('--no-resize-buffer')
         if self.test.get():
-            opts['test'] = True
+            args.append('--test')
         if self.external_downloader.get():
-            opts['external_downloader'] = self.external_downloader.get()
+            args.extend(['--external-downloader', self.external_downloader.get()])
         if self.external_downloader_args.get():
-            opts['external_downloader_args'] = self.external_downloader_args.get()
+            args.extend(['--external-downloader-args', self.external_downloader_args.get()])
+        if self.hls_prefer_native.get():
+            args.append('--hls-prefer-native')
+        if self.hls_prefer_ffmpeg.get():
+            args.append('--hls-prefer-ffmpeg')
+        if self.hls_use_mpegts.get():
+            args.append('--hls-use-mpegts')
 
         # Filesystem options
-        output_template = self.output_template.get() if hasattr(self, 'output_template') else ''
-        output_dir = self.output_dir.get() if hasattr(self, 'output_dir') else ''
+        output_template = self.output_template.get()
+        output_dir = self.output_dir.get()
         if output_template and self.playlist_subdir.get() and '%(playlist)s/' not in output_template and '%(playlist)s\\' not in output_template:
+            # Avoid duplicating the playlist folder if the user already encoded it in the template path.
             output_template = os.path.join('%(playlist)s', output_template)
         if output_dir and output_template:
-            opts['outtmpl'] = os.path.join(output_dir, output_template)
+            args.extend(['-o', os.path.join(output_dir, output_template)])
         elif output_template:
-            opts['outtmpl'] = output_template
+            args.extend(['-o', output_template])
         elif output_dir:
-            opts['paths'] = {'home': output_dir}
+            args.extend(['-P', output_dir])
 
-        if self.paths.get() if hasattr(self, 'paths') else False:
-            opts['paths'] = {'home': self.paths.get()}
-        if self.restrict_filenames.get() if hasattr(self, 'restrict_filenames') else False:
-            opts['restrictfilenames'] = True
-        if self.no_restrict_filenames.get() if hasattr(self, 'no_restrict_filenames') else False:
-            opts['restrictfilenames'] = False
-        if self.windows_filenames.get() if hasattr(self, 'windows_filenames') else False:
-            opts['windowsfilenames'] = True
-        if self.no_overwrites.get() if hasattr(self, 'no_overwrites') else False:
-            opts['nooverwrites'] = True
-        if self.force_overwrites.get() if hasattr(self, 'force_overwrites') else False:
-            opts['overwrites'] = True
-        if self.continue_dl.get() if hasattr(self, 'continue_dl') else False:
-            opts['continuedl'] = True
-        if self.no_continue.get() if hasattr(self, 'no_continue') else False:
-            opts['continuedl'] = False
-        if self.no_part.get() if hasattr(self, 'no_part') else False:
-            opts['nopart'] = True
-        if self.no_mtime.get() if hasattr(self, 'no_mtime') else False:
-            opts['updatetime'] = False
-        if self.write_description.get() if hasattr(self, 'write_description') else False:
-            opts['writedescription'] = True
-        if self.write_info_json.get() if hasattr(self, 'write_info_json') else False:
-            opts['writeinfojson'] = True
-        if self.write_annotations.get() if hasattr(self, 'write_annotations') else False:
-            opts['writeannotations'] = True
+        if self.paths.get():
+            args.extend(['--paths', self.paths.get()])
+        if self.restrict_filenames.get():
+            args.append('--restrict-filenames')
+        if self.no_restrict_filenames.get():
+            args.append('--no-restrict-filenames')
+        if self.windows_filenames.get():
+            args.append('--windows-filenames')
+        if self.no_overwrites.get():
+            args.append('--no-overwrites')
+        if self.force_overwrites.get():
+            args.append('--force-overwrites')
+        if self.continue_dl.get():
+            args.append('--continue')
+        if self.no_continue.get():
+            args.append('--no-continue')
+        if self.no_part.get():
+            args.append('--no-part')
+        if self.no_mtime.get():
+            args.append('--no-mtime')
+        if self.write_description.get():
+            args.append('--write-description')
+        if self.write_info_json.get():
+            args.append('--write-info-json')
+        if self.write_annotations.get():
+            args.append('--write-annotations')
+        if self.write_comments.get():
+            args.append('--write-comments')
+        if self.load_info_json.get():
+            args.extend(['--load-info-json', self.load_info_json.get()])
+        if self.cache_dir.get():
+            args.extend(['--cache-dir', self.cache_dir.get()])
+        if self.no_cache_dir.get():
+            args.append('--no-cache-dir')
+        if self.rm_cache_dir.get():
+            args.append('--rm-cache-dir')
 
         # Video format options
-        if hasattr(self, 'video_format'):
-            vf = self.video_format.get()
-            if vf and vf != 'best':
-                opts['format'] = vf
-        if hasattr(self, 'format_sort') and self.format_sort.get():
-            opts['format_sort'] = self.format_sort.get()
-        if hasattr(self, 'prefer_free_formats') and self.prefer_free_formats.get():
-            opts['prefer_free_formats'] = True
-        if hasattr(self, 'all_formats') and self.all_formats.get():
-            opts['allformats'] = True
+        if self.format.get():
+            args.extend(['-f', self.format.get()])
+        if self.format_sort.get():
+            args.extend(['--format-sort', self.format_sort.get()])
+        if self.prefer_free_formats.get():
+            args.append('--prefer-free-formats')
+        if self.check_formats.get():
+            args.append('--check-formats')
+        if self.merge_output_format.get():
+            args.extend(['--merge-output-format', self.merge_output_format.get()])
+        if self.video_multistreams.get():
+            args.extend(['--video-multistreams', self.video_multistreams.get()])
+        if self.audio_multistreams.get():
+            args.extend(['--audio-multistreams', self.audio_multistreams.get()])
 
         # Subtitle options
-        if hasattr(self, 'write_subtitles') and self.write_subtitles.get():
-            opts['writesubtitles'] = True
-        if hasattr(self, 'write_auto_subs') and self.write_auto_subs.get():
-            opts['writeautomaticsub'] = True
-        if hasattr(self, 'subtitles_langs') and self.subtitles_langs.get():
-            opts['subtitleslangs'] = self.subtitles_langs.get().split(',')
-        if hasattr(self, 'subtitles_format') and self.subtitles_format.get():
-            opts['subtitlesformat'] = self.subtitles_format.get()
-        if hasattr(self, 'embed_subs') and self.embed_subs.get():
-            opts['embedsubtitles'] = True
+        if self.write_subs.get():
+            args.append('--write-subs')
+        if self.write_auto_subs.get():
+            args.append('--write-auto-subs')
+        if self.list_subs.get():
+            args.append('--list-subs')
+        if self.sub_format.get():
+            args.extend(['--sub-format', self.sub_format.get()])
+        if self.sub_langs.get():
+            args.extend(['--sub-langs', self.sub_langs.get()])
+        if self.embed_subs.get():
+            args.append('--embed-subs')
+        if self.no_embed_subs.get():
+            args.append('--no-embed-subs')
+        if self.embed_thumbnail.get():
+            args.append('--embed-thumbnail')
+        if self.no_embed_thumbnail.get():
+            args.append('--no-embed-thumbnail')
 
-        # Audio options
-        if hasattr(self, 'extract_audio') and self.extract_audio.get():
-            opts['extractaudio'] = True
-            if hasattr(self, 'audio_format') and self.audio_format.get():
-                opts['audioformat'] = self.audio_format.get()
-            if hasattr(self, 'audio_quality') and self.audio_quality.get():
-                opts['audioquality'] = self.audio_quality.get()
-        if hasattr(self, 'keep_video') and self.keep_video.get():
-            opts['keepvideo'] = True
+        # Authentication options
+        if self.username.get():
+            args.extend(['--username', self.username.get()])
+        if self.password.get():
+            args.extend(['--password', self.password.get()])
+        if self.twofactor.get():
+            args.extend(['--twofactor', self.twofactor.get()])
+        if self.netrc.get():
+            args.append('--netrc')
+        if self.video_password.get():
+            args.extend(['--video-password', self.video_password.get()])
+        if self.ap_mso.get():
+            args.extend(['--ap-mso', self.ap_mso.get()])
+        if self.ap_username.get():
+            args.extend(['--ap-username', self.ap_username.get()])
+        if self.ap_password.get():
+            args.extend(['--ap-password', self.ap_password.get()])
+        if self.client_certificate.get():
+            args.extend(['--client-certificate', self.client_certificate.get()])
+        if self.client_certificate_key.get():
+            args.extend(['--client-certificate-key', self.client_certificate_key.get()])
+        if self.client_certificate_password.get():
+            args.extend(['--client-certificate-password', self.client_certificate_password.get()])
 
         # Post-processing options
-        postprocessors = []
-        if hasattr(self, 'write_thumbnail') and self.write_thumbnail.get():
-            opts['writethumbnail'] = True
-        if hasattr(self, 'list_thumbnails') and self.list_thumbnails.get():
-            opts['listthumbnails'] = True
-        if hasattr(self, 'embed_thumbnail') and self.embed_thumbnail.get():
-            postprocessors.append({'key': 'EmbedThumbnail'})
-        if hasattr(self, 'add_metadata') and self.add_metadata.get():
-            postprocessors.append({'key': 'FFmpegMetadata'})
-        if hasattr(self, 'xattrs') and self.xattrs.get():
-            postprocessors.append({'key': 'XAttrMetadata'})
-        if hasattr(self, 'convert_subs') and self.convert_subs.get():
-            postprocessors.append({'key': 'FFmpegSubtitlesConvertor', 'format': self.convert_subs.get()})
+        if self.extract_audio.get():
+            args.append('-x')
+        if self.audio_format.get():
+            args.extend(['--audio-format', self.audio_format.get()])
+        if self.audio_quality.get():
+            args.extend(['--audio-quality', self.audio_quality.get()])
+        if self.recode_video.get():
+            args.extend(['--recode-video', self.recode_video.get()])
+        if self.remux_video.get():
+            args.extend(['--remux-video', self.remux_video.get()])
+        if self.keep_video.get():
+            args.append('--keep-video')
+        if self.no_keep_video.get():
+            args.append('--no-keep-video')
+        if self.embed_metadata.get():
+            args.append('--embed-metadata')
+        if self.embed_chapters.get():
+            args.append('--embed-chapters')
+        if self.embed_info_json.get():
+            args.append('--embed-info-json')
+        if self.add_metadata.get():
+            args.append('--add-metadata')
+        if self.metadata_from_title.get():
+            args.extend(['--metadata-from-title', self.metadata_from_title.get()])
+        if self.parse_metadata.get():
+            args.extend(['--parse-metadata', self.parse_metadata.get()])
+        if self.ffmpeg_location.get():
+            args.extend(['--ffmpeg-location', self.ffmpeg_location.get()])
+        if self.postprocessor_args.get():
+            args.extend(['--postprocessor-args', self.postprocessor_args.get()])
 
-        if postprocessors:
-            opts['postprocessors'] = postprocessors
+        # Thumbnail options
+        if self.write_thumbnail.get():
+            args.append('--write-thumbnail')
+        if self.write_all_thumbnails.get():
+            args.append('--write-all-thumbnails')
+        if self.list_thumbnails.get():
+            args.append('--list-thumbnails')
+        if self.convert_thumbnails.get():
+            args.extend(['--convert-thumbnails', self.convert_thumbnails.get()])
 
-        if hasattr(self, 'fixup_policy') and self.fixup_policy.get():
-            opts['fixup'] = self.fixup_policy.get()
-        if hasattr(self, 'prefer_ffmpeg') and self.prefer_ffmpeg.get():
-            opts['prefer_ffmpeg'] = True
-        if hasattr(self, 'ffmpeg_location') and self.ffmpeg_location.get():
-            opts['ffmpeg_location'] = self.ffmpeg_location.get()
+        # Verbosity options
+        if self.quiet.get():
+            args.append('--quiet')
+        if self.verbose.get():
+            args.append('--verbose')
+        if self.simulate.get():
+            args.append('--simulate')
+        if self.skip_download.get():
+            args.append('--skip-download')
+        if self.get_title.get():
+            args.append('--get-title')
+        if self.get_id.get():
+            args.append('--get-id')
+        if self.get_url.get():
+            args.append('--get-url')
+        if self.get_thumbnail.get():
+            args.append('--get-thumbnail')
+        if self.get_description.get():
+            args.append('--get-description')
+        if self.get_duration.get():
+            args.append('--get-duration')
+        if self.get_filename.get():
+            args.append('--get-filename')
+        if self.get_format.get():
+            args.append('--get-format')
+        if self.dump_json.get():
+            args.append('--dump-json')
+        if self.dump_single_json.get():
+            args.append('--dump-single-json')
+        if self.print_json.get():
+            args.append('--print-json')
+        if self.no_progress.get():
+            args.append('--no-progress')
+        if self.console_title.get():
+            args.append('--console-title')
+        if self.progress_template.get():
+            args.extend(['--progress-template', self.progress_template.get()])
+
+        # Workarounds
+        if self.encoding.get():
+            args.extend(['--encoding', self.encoding.get()])
+        if self.no_check_certificate.get():
+            args.append('--no-check-certificate')
+        if self.prefer_insecure.get():
+            args.append('--prefer-insecure')
+        if self.user_agent.get():
+            args.extend(['--user-agent', self.user_agent.get()])
+        if self.referer.get():
+            args.extend(['--referer', self.referer.get()])
+        if self.add_header.get():
+            args.extend(['--add-header', self.add_header.get()])
+        if self.bidi_workaround.get():
+            args.append('--bidi-workaround')
+        if self.sleep_requests.get():
+            args.extend(['--sleep-requests', self.sleep_requests.get()])
+        if self.legacy_server_connect.get():
+            args.append('--legacy-server-connect')
 
         # SponsorBlock options
-        if hasattr(self, 'no_sponsorblock') and self.no_sponsorblock.get():
-            opts['no_sponsorblock'] = True
-        elif hasattr(self, 'sponsorblock_remove') and self.sponsorblock_remove.get():
-            remove_cats = [cat for cat, var in (self.sb_remove_vars or {}).items() if var.get()]
-            if remove_cats:
-                opts['sponsorblock_remove'] = remove_cats
-        elif hasattr(self, 'sponsorblock_mark') and self.sponsorblock_mark.get():
-            mark_cats = [cat for cat, var in (self.sb_mark_vars or {}).items() if var.get()]
-            if mark_cats:
-                opts['sponsorblock_mark'] = mark_cats
-        if hasattr(self, 'sponsorblock_chapter_title') and self.sponsorblock_chapter_title.get():
-            opts['sponsorblock_chapter_title'] = self.sponsorblock_chapter_title.get()
-        if hasattr(self, 'sponsorblock_api') and self.sponsorblock_api.get():
-            opts['sponsorblock_api'] = self.sponsorblock_api.get()
+        if self.sponsorblock_mark.get():
+            args.append('--sponsorblock-mark')
+        if self.sponsorblock_remove.get():
+            args.append('--sponsorblock-remove')
 
-        # Cookies
-        if hasattr(self, 'cookies_from_browser') and self.cookies_from_browser.get():
-            opts['cookiesfrombrowser'] = (self.cookies_from_browser.get(), None, None, None)
-        if hasattr(self, 'cookies') and self.cookies.get():
-            opts['cookiefile'] = self.cookies.get()
+        # Collect categories from checkboxes
+        selected_remove_cats = [cat for cat, var in self.sb_remove_vars.items() if var.get()]
+        if selected_remove_cats:
+            args.extend(['--sponsorblock-remove', ','.join(selected_remove_cats)])
 
-        # Quiet/Verbose
-        if hasattr(self, 'quiet') and self.quiet.get():
-            opts['quiet'] = True
-        if hasattr(self, 'verbose') and self.verbose.get():
-            opts['verbose'] = True
+        selected_mark_cats = [cat for cat, var in self.sb_mark_vars.items() if var.get()]
+        if selected_mark_cats:
+            args.extend(['--sponsorblock-mark', ','.join(selected_mark_cats)])
 
-        # Authentication
-        if hasattr(self, 'username') and self.username.get():
-            opts['username'] = self.username.get()
-        if hasattr(self, 'password') and self.password.get():
-            opts['password'] = self.password.get()
-        if hasattr(self, 'twofactor') and self.twofactor.get():
-            opts['twofactor'] = self.twofactor.get()
-        if hasattr(self, 'netrc') and self.netrc.get():
-            opts['usenetrc'] = True
-        if hasattr(self, 'netrc_location') and self.netrc_location.get():
-            opts['netrc_location'] = self.netrc_location.get()
-        if hasattr(self, 'video_password') and self.video_password.get():
-            opts['videopassword'] = self.video_password.get()
-        if hasattr(self, 'ap_username') and self.ap_username.get():
-            opts['ap_username'] = self.ap_username.get()
-        if hasattr(self, 'ap_password') and self.ap_password.get():
-            opts['ap_password'] = self.ap_password.get()
-        if hasattr(self, 'ap_mso') and self.ap_mso.get():
-            opts['ap_mso'] = self.ap_mso.get()
-        if hasattr(self, 'client_certificate') and self.client_certificate.get():
-            opts['client_certificate'] = self.client_certificate.get()
-        if hasattr(self, 'client_certificate_key') and self.client_certificate_key.get():
-            opts['client_certificate_key'] = self.client_certificate_key.get()
+        if self.sponsorblock_chapter_title.get():
+            args.extend(['--sponsorblock-chapter-title', self.sponsorblock_chapter_title.get()])
+        if self.no_sponsorblock.get():
+            args.append('--no-sponsorblock')
+        if self.sponsorblock_api.get():
+            args.extend(['--sponsorblock-api', self.sponsorblock_api.get()])
 
-        # Progress hooks
-        opts['progress_hooks'] = [self._progress_hook]
-        opts['logger'] = self._ydl_logger()
+        # Extractor options
+        extractor_args = []
+        if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
+            extractor_args.append(f'youtube:lang={self.metadata_lang.get()}')
 
-        return opts
+        if self.extractor_args.get():
+            extractor_args.append(self.extractor_args.get())
 
-    def _progress_hook(self, d: dict):
-        """Callback for download progress updates"""
-        if self._stop_requested:
-            raise Exception('Download stopped by user')
+        if extractor_args:
+            args.extend(['--extractor-args', '; '.join(extractor_args)])
 
-        status = d.get('status', '')
-        info = ''
+        if self.extractor_retries.get():
+            args.extend(['--extractor-retries', self.extractor_retries.get()])
+        if self.allow_dynamic_mpd.get():
+            args.append('--allow-dynamic-mpd')
+        if self.ignore_dynamic_mpd.get():
+            args.append('--ignore-dynamic-mpd')
+        if self.hls_split_discontinuity.get():
+            args.append('--hls-split-discontinuity')
+        if self.cookies_from_browser.get():
+            args.extend(['--cookies-from-browser', self.cookies_from_browser.get()])
+        if self.cookies.get():
+            args.extend(['--cookies', self.cookies.get()])
 
-        if status == 'downloading':
-            downloaded = d.get('downloaded_bytes', 0)
-            total = d.get('total_bytes') or d.get('total_bytes_estimate')
-            
-            percent = 0.0
-            if total:
-                percent = (downloaded / total) * 100
-                
-            speed = d.get('speed', 0)
-            eta = d.get('eta', 0)
-            info = f"Downloading: {percent:.1f}% | Speed: {self._format_speed(speed)} | ETA: {eta}s"
-        elif status == 'finished':
-            info = f"Finished: {d.get('filename', '')}"
-        elif status == 'error':
-            info = f"Error: {d.get('error', 'Unknown error')}"
+        # Raw arguments
+        raw_args_text = self.raw_args.get('1.0', tk.END).strip()
+        if raw_args_text:
+            import shlex
+            try:
+                raw_args_list = shlex.split(raw_args_text)
+                args.extend(raw_args_list)
+            except ValueError:
+                # If shlex fails, try splitting by whitespace
+                args.extend(raw_args_text.split())
 
-        if info:
-            self.root.after(0, lambda: self.log_message(info))
+        # Batch file or URL
+        if batch_file:
+            if batch_file.startswith('http') and '\n' not in batch_file:
+                # Single URL in batch field
+                args.append(batch_file)
+            elif '\n' in batch_file or (not os.path.exists(batch_file) and batch_file.startswith('http')):
+                # Multi-line URLs or non-existent path that looks like URL/list
+                try:
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tf:
+                        tf.write(batch_file)
+                        temp_path = tf.name
+                    args.extend(['-a', temp_path])
+                    # Register for cleanup
+                    if not hasattr(self, '_temp_batch_files'):
+                        self._temp_batch_files = []
+                        atexit.register(self._cleanup_temp_files)
+                    self._temp_batch_files.append(temp_path)
+                except Exception as e:
+                    self.log_message(f'Error creating temporary batch file: {e}')
+                    args.extend(['-a', batch_file])  # Fallback
+            else:
+                args.extend(['-a', batch_file])
+        elif url:
+            args.append(url)
 
-    def _format_speed(self, speed):
-        """Format speed in human readable format"""
-        if speed is None:
-            return 'N/A'
-        if speed < 1024:
-            return f'{speed:.1f} B/s'
-        if speed < 1024 * 1024:
-            return f'{speed / 1024:.1f} KiB/s'
-        return f'{speed / (1024 * 1024):.1f} MiB/s'
+        return args
 
-    def _ydl_logger(self):
-        """Create a logger for YoutubeDL"""
-        class YDLLogger:
-            def __init__(self, gui):
-                self.gui = gui
+    def _cleanup_temp_files(self):
+        if hasattr(self, '_temp_batch_files'):
+            for f in self._temp_batch_files:
+                try:
+                    if os.path.exists(f):
+                        os.remove(f)
+                except Exception:
+                    pass
+            self._temp_batch_files.clear()
 
-            def debug(self, msg):
-                if self.gui.verbose.get() if hasattr(self.gui, 'verbose') else False:
-                    self.gui.root.after(0, lambda: self.gui.log_message(f'[DEBUG] {msg}'))
+    def generate_command(self):
+        """Generate and display the yt-dlp command"""
+        args = self.build_command_args()
+        cmd = [sys.executable, '-m', 'yt_dlp', *args]
+        cmd_str = ' '.join(f'"{arg}"' if ' ' in arg else arg for arg in cmd)
 
-            def warning(self, msg):
-                if not self.gui.no_warnings.get():
-                    self.gui.root.after(0, lambda: self.gui.log_message(f'[WARN] {msg}'))
+        self.generated_cmd.config(state=tk.NORMAL)
+        self.generated_cmd.delete('1.0', tk.END)
+        self.generated_cmd.insert('1.0', cmd_str)
+        self.generated_cmd.config(state=tk.DISABLED)
 
-            def error(self, msg):
-                self.gui.root.after(0, lambda: self.gui.log_message(f'[ERROR] {msg}'))
-
-        return YDLLogger(self)
+    def copy_command(self):
+        """Copy generated command to clipboard"""
+        self.generate_command()
+        cmd_text = self.generated_cmd.get('1.0', tk.END).strip()
+        self.root.clipboard_clear()
+        self.root.clipboard_append(cmd_text)
+        self.log_message('Command copied to clipboard!')
 
     def run_ytdlp(self, tasks):
-        """Run a list of yt-dlp tasks using YoutubeDL API"""
-        from yt_dlp import YoutubeDL
-
+        """Run a list of yt-dlp tasks (args sets) sequentially"""
         try:
             total = len(tasks)
-            for i, (idx, url) in enumerate(tasks):
-                if self._stop_requested:
-                    self.log_message(self.tr('Download stopped.'))
-                    break
-
+            for i, (idx, args) in enumerate(tasks):
                 self.log_message(self.translate_concat(f'[{i + 1}/{total}] Download Task: Index ', idx))
                 self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
-                opts = self.build_ydl_opts()
-                opts['outtmpl'] = opts.get('outtmpl', '%(title)s.%(ext)s')
+                full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
 
-                try:
-                    with YoutubeDL(opts) as ydl:
-                        self._ydl = ydl
-                        ydl.download([url])
-                        self._ydl = None
-                except Exception as e:
-                    self.log_message(self.translate_concat('Task failed: ', str(e)))
-                    if 'n challenge solving failed' in str(e):
-                        self.log_message('\n[!] Tip: JavaScript runtime missing. Run "brew install node" to fix.')
+                self.current_process = subprocess.Popen(
+                    full_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    bufsize=1,
+                    preexec_fn=os.setpgrp,  # noqa: PLW1509 Create process group for easy mass-kill
+                )
+                process = self.current_process
+
+                if process.stdout:
+                    for line in process.stdout:
+                        if line:
+                            self.log_message(line.rstrip())
+
+                process.wait()
+
+                if process.returncode != 0 and process.returncode not in (15, -15):
+                    self.log_message(self.translate_concat('Task failed with code ', process.returncode))
+                    if 'n challenge solving failed' in ''.join(self.console.get('1.0', tk.END)):
+                        self.log_message('\n[!] 提示：检测到 JavaScript 运行环境缺失。')
+                        self.log_message("[!] 请在终端运行 'brew install node' 以修复此下载报错。")
+                    # We continue even if one fails
+
+                if not hasattr(self, 'current_process') or self.current_process is None:
+                    # User likely clicked Stop
+                    break
 
             self.log_message(self.tr('All tasks processed.'))
             self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
@@ -636,110 +753,340 @@ class DownloaderMixin:
             self.log_message(self.translate_concat('ERROR in runner: ', str(e)))
             self.root.after(0, lambda: self.status_var.set(self.tr('Error')))
         finally:
-            self._ydl = None
-            self._stop_requested = False
+            self.current_process = None
             self.root.after(0, self._restore_download_button)
-
-    def on_download_btn_click(self):
-        if self._ydl is not None or self._stop_requested:
-            self.stop_download()
-        else:
-            self.start_download()
-
-    def stop_download(self):
-        """Stop the current download"""
-        self._stop_requested = True
-        self.log_message(self.tr('Stopping download...'))
-
-        if self._ydl:
-            try:
-                # YoutubeDL doesn't have a direct stop method,
-                # but we can set a flag that the progress_hook checks
-                pass
-            except Exception as e:
-                self.log_message(f'[DEBUG] Stop error: {e}')
-
-        self._restore_download_button()
 
     def _restore_download_button(self):
         if hasattr(self, 'download_btn'):
             self.download_btn.config(text=self.tr('Download'))
             self._translatable_widgets[self.download_btn] = 'Download'
 
-    def start_download(self):
-        """Start download process using YoutubeDL API"""
-        from yt_dlp.utils import DownloadError
+    def on_download_btn_click(self):
+        if hasattr(self, 'current_process') and self.current_process:
+            self.stop_download()
+        else:
+            self.start_download()
 
-        url = self.url_entry.get().strip()
-        if not url and not self.batch_file_entry.get().strip():
-            messagebox.showwarning(self.tr('Warning'), self.tr('Please enter a URL'))
+    def stop_download(self):
+        if hasattr(self, 'current_process') and self.current_process:
+            p = self.current_process
+            self.current_process = None  # Signal to stop loop
+            self.log_message(self.tr('Stopping download...'))
+
+            try:
+                # Kill the entire process group (including child processes like ffmpeg)
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+                p.terminate()
+                p.kill()
+            except Exception as e:
+                self.log_message(f'[DEBUG] Stop error: {e}')
+
+            # Popup for cleanup
+            msg = self.tr('Download stopped. Would you like to delete partially downloaded files?')
+            if messagebox.askyesno(self.tr('Stop'), msg):
+                self.cleanup_partial_files()
+        else:
+            self.log_message(self.tr('No download currently running.'))
+
+    def cleanup_partial_files(self):
+        """Scan output directory and remove .part, .ytdl and temporary fragment files."""
+        output_dir = self.output_dir.get().strip()
+        if not output_dir or not os.path.exists(output_dir):
             return
 
-        if self.save_config:
-            self.save_config()
+        count = 0
+        self.log_message(self.tr('Cleaning up partial files...'))
+        try:
+            for filename in os.listdir(output_dir):
+                # yt-dlp partial files usually end with .part, .ytdl
+                # or have fragments like .f137.part
+                if filename.endswith(('.part', '.ytdl')) or ('.f' in filename and '.part' in filename):
+                    file_path = os.path.join(output_dir, filename)
+                    if os.path.isfile(file_path):
+                        try:
+                            os.remove(file_path)
+                            count += 1
+                        except Exception as e:
+                            self.log_message(f'Failed to remove {filename}: {e}')
+            self.log_message(f'Cleanup finished. Removed {count} files.')
+        except Exception as e:
+            self.log_message(f'Error during cleanup: {e}')
 
+    def start_download(self):
+        """Start download in a separate thread"""
+        self.log_message('[DEBUG] start_download called')
+        url = self.url_entry.get().strip()
+        self.log_message(f'[DEBUG] url={url!r}')
+        try:
+            base_args = self.build_command_args()
+            self.log_message(f'[DEBUG] base_args count={len(base_args) if base_args else 0}')
+        except Exception as e:
+            import traceback
+            self.log_message(f'[DEBUG] build_command_args CRASHED: {e}')
+            self.log_message(traceback.format_exc())
+            self._restore_download_button()
+            return
+
+        if not base_args or (not url and not self.batch_file_entry.get().strip()):
+            self.log_message('[DEBUG] No URL or args — showing warning')
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
+            return
+
+        # Change button to Stop
         self.download_btn.config(text=self.tr('Stop'))
         self._translatable_widgets[self.download_btn] = 'Stop'
 
+        output_dir = self.output_dir.get().strip()
+        self.log_message(f'[DEBUG] output_dir={output_dir!r}')
+
+        playlist_parsed_url = getattr(self, 'playlist_parsed_url', None)
+        self.log_message(f'[DEBUG] URL match check: Input="{url}", Parsed="{playlist_parsed_url}"')
+
+        tasks = []
+        # ONLY use playlist tasks if the URL matches what we parsed!
+        if hasattr(self, 'playlist_tree') and playlist_parsed_url and url == playlist_parsed_url:
+            items = self.playlist_tree.get_children()
+            # SIMPLICITY: Just follow the tree from TOP TO BOTTOM as shown in GUI.
+            vis_to_orig_map = getattr(self, 'vis_to_orig', {})
+            for item in items:
+                vals = self.playlist_tree.item(item, 'values')
+                checked = vals[0] == '☑'
+                visual_idx = int(vals[1])
+
+                if checked:
+                    visual_idx = int(vals[1])
+                    gui_title = str(vals[2])  # Defined here!
+                    original_idx = vis_to_orig_map.get(visual_idx, visual_idx)
+                    task_args = []
+                    skip = False
+                    for arg in base_args:
+                        if skip:
+                            skip = False
+                            continue
+                        # EXCLUDE batch file and redundant playlist items from individual tasks
+                        if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse',
+                                   '-o', '-P', '--paths', '-a', '--batch-file'):
+                            if arg in ('--playlist-items', '-o', '-P', '--paths', '-a', '--batch-file'):
+                                skip = True
+                            continue
+                        if arg == url:  # Don't add the main URL yet
+                            continue
+                        task_args.append(arg)
+
+                    # Always use the specific playlist URL for individual tasks
+                    task_args.append(url)
+                    filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
+                    # Remove unsave characters
+                    filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
+
+                    # Handle playlist subfolder
+                    final_output_dir = output_dir
+                    if self.playlist_subdir.get() and getattr(self, 'current_playlist_metadata_title', None):
+                        folder_name = ''.join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
+                        if folder_name:
+                            final_output_dir = os.path.join(output_dir, folder_name)
+                            if not os.path.exists(final_output_dir):
+                                os.makedirs(final_output_dir, exist_ok=True)
+
+                    out_path = os.path.join(final_output_dir, filename_tpl) if final_output_dir else filename_tpl
+                    task_args.extend(['--playlist-items', str(original_idx)])
+                    task_args.extend(['-o', out_path])
+                    tasks.append((visual_idx, task_args))
+
+        # If no playlist tasks were built (not a playlist or nothing checked), treat as single/batch
+        if not tasks:
+            tasks.append(('Single', base_args))
+
+        self.console.config(state=tk.NORMAL)
         self.console.delete('1.0', tk.END)
-        self.log_message(self.tr('Starting download...'))
-        self.status_var.set(self.tr('Preparing...'))
+        self.console.config(state=tk.DISABLED)
 
-        # Collect URLs to download
-        urls = []
-        if url:
-            urls.append((1, url))
-
-        batch_file = self.batch_file_entry.get().strip()
-        if batch_file:
-            try:
-                with open(batch_file, 'r') as f:
-                    for i, line in enumerate(f, len(urls) + 1):
-                        line = line.strip()
-                        if line and not line.startswith('#'):
-                            urls.append((i, line))
-            except Exception as e:
-                self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
-
-        if not urls:
-            messagebox.showwarning(self.tr('Warning'), self.tr('No URLs to download'))
-            return
-
-        self._stop_requested = False
-        thread = threading.Thread(target=self.run_ytdlp, args=(urls,), daemon=True)
+        thread = threading.Thread(target=self.run_ytdlp, args=(tasks,), daemon=True)
         thread.start()
 
-    def log_message(self, message):
-        """Log a message to the console"""
-        if hasattr(self, 'console'):
-            self.console.insert(tk.END, str(message) + '\n')
-            self.console.see(tk.END)
-
-    def generate_command(self):
-        """Generate equivalent command line (for display purposes)"""
+    def parse_playlist(self):
         url = self.url_entry.get().strip()
-        opts = self.build_ydl_opts()
+        batch = self.batch_file_entry.get().strip()
 
-        # Convert opts back to command line for display
-        cmd_parts = ['yt-dlp']
-        for key, val in opts.items():
-            if key in ('progress_hooks', 'logger'):
-                continue
-            if val is True:
-                cmd_parts.append(f'--{key.replace("_", "-")}')
-            elif val is False:
-                cmd_parts.append(f'--no-{key.replace("_", "-")}')
-            elif isinstance(val, str):
-                cmd_parts.extend([f'--{key.replace("_", "-")}', val])
-            elif isinstance(val, list):
-                cmd_parts.extend([f'--{key.replace("_", "-")}', ','.join(str(v) for v in val)])
+        # If main URL is empty but batch has a URL, use it
+        if not url and batch.startswith('http') and '\n' not in batch:
+            url = batch
+            self.url_entry.delete(0, tk.END)
+            self.url_entry.insert(0, url)
 
-        cmd_parts.append(url)
-        return ' '.join(cmd_parts)
+        if not url:
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
+            return
 
-    def copy_command(self):
-        """Copy generated command to clipboard"""
-        import pyperclip
-        cmd = self.generate_command()
-        pyperclip.copy(cmd)
-        self.log_message(self.tr('Command copied to clipboard.'))
+        self.console.config(state=tk.NORMAL)
+        self.console.delete('1.0', tk.END)
+        self.console.config(state=tk.DISABLED)
+        self.status_var.set(self.tr('Checking URL...'))
+        thread = threading.Thread(target=self._parse_playlist_only, args=(url,), daemon=True)
+        thread.start()
+
+    def _parse_playlist_only(self, url):
+        try:
+            self.ensure_all_tabs_built()
+            self.log_message(self.tr('Checking if URL is a playlist...'))
+            # ADDED --no-cache-dir to ensure we get fresh language-specific metadata
+            cmd = [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', '--no-cache-dir']
+
+            # MAP GUI Language to Metadata Language
+            lang_map = {'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'}
+            gui_lang_code = getattr(self, 'current_language', 'zh')
+            lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
+
+            self.log_message(f'[DEBUG] Parsing playlist metadata using interface-linked language: {lang_to_use}')
+            cmd.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
+            cmd.extend(['--add-header', f'Accept-Language:{lang_to_use},zh-CN;q=0.9,zh;q=0.8'])
+            cmd.extend(['--geo-bypass'])
+
+            # Keep playlist parsing aligned with the actual download/auth context.
+            # Otherwise YouTube may reject the preflight parse while normal downloads
+            # would have succeeded with the user's browser session.
+            if self.cookies_from_browser.get():
+                cmd.extend(['--cookies-from-browser', self.cookies_from_browser.get()])
+            if self.cookies.get():
+                cmd.extend(['--cookies', self.cookies.get()])
+            if self.user_agent.get():
+                cmd.extend(['--user-agent', self.user_agent.get()])
+            if self.referer.get():
+                cmd.extend(['--referer', self.referer.get()])
+            if self.add_header.get():
+                cmd.extend(['--add-header', self.add_header.get()])
+
+            cmd.append(url)
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                bufsize=1,
+            )
+            stdout, stderr = process.communicate()
+            if process.returncode == 0:
+                info = json.loads(stdout)
+                if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
+                    self.playlist_parsed_url = url
+                    self.playlist_entries_data = info['entries']
+                    self.current_playlist_metadata_title = info.get('title', 'Playlist')
+                    self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
+                    return
+                else:
+                    self.log_message(self.tr('Not a playlist or no entries found.'))
+            else:
+                self.log_message(f'[ERROR] Parsing failed: {stderr.strip()}')
+                self.log_message(self.tr('Failed to parse playlist.'))
+        except Exception as e:
+            self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
+        self.status_var.set(self.tr('Ready'))
+
+    def _show_playlist_tab(self, temp_title):
+        self.log_message(self.tr('Playlist detected. Please select videos to download.'))
+        self.status_var.set(self.tr('Playlist detected'))
+        if hasattr(self, 'playlist_tree'):
+            self.notebook.select(self.playlist_tab_frame)
+            self.playlist_tree.delete(*self.playlist_tree.get_children())
+
+            entries = self.playlist_entries_data
+            filtered_entries = []
+            for i, entry in enumerate(entries):
+                title = entry.get('title') or entry.get('id') or f'Video {i + 1}'
+                availability = entry.get('availability', '')
+                is_private = (
+                    title in ('[Private video]', '[私享视频]', '[私有视频]', '[Deleted video]', '[已删除的视频]')
+                    or availability == 'private'
+                    or entry.get('title') is None
+                )
+                if is_private and self.playlist_exclude_private_var.get():
+                    continue
+                filtered_entries.append((i + 1, title))
+
+            if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
+                filtered_entries = list(reversed(filtered_entries))
+
+            total_visible = len(filtered_entries)
+            self.vis_to_orig = {}
+            for j, (original_idx, title) in enumerate(filtered_entries):
+                # FIXED LOGIC: Top row gets the max number, Bottom row gets 1.
+                # Top row is ALWAYS downloaded first.
+                visual_idx = total_visible - j
+                self.vis_to_orig[visual_idx] = original_idx
+                self.playlist_tree.insert('', tk.END, values=('☑', visual_idx, title))
+
+            # Reset headers
+            self.playlist_tree.heading('status', text=' ')
+            self.playlist_tree.heading('index', text='#')
+            self.playlist_tree.heading('title', text=self.tr('Title'))
+
+    def list_formats(self):
+        """List available formats for the video"""
+        url = self.url_entry.get().strip()
+        if not url:
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
+            return
+
+        self.console.config(state=tk.NORMAL)
+        self.console.delete('1.0', tk.END)
+        self.console.config(state=tk.DISABLED)
+
+        thread = threading.Thread(target=self.run_ytdlp, args=(['-F', url],), daemon=True)
+        thread.start()
+
+    def extract_info(self):
+        """Extract video information"""
+        url = self.url_entry.get().strip()
+        if not url:
+            messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
+            return
+
+        self.console.config(state=tk.NORMAL)
+        self.console.delete('1.0', tk.END)
+        self.console.config(state=tk.DISABLED)
+
+        thread = threading.Thread(target=self.run_ytdlp, args=(['--dump-json', url],), daemon=True)
+        thread.start()
+
+    def _start_log_watcher(self):
+        """Poll the log queue and update the UI from the main thread"""
+        try:
+            while True:
+                msg = self.log_queue.get_nowait()
+                self._log_message_internal(msg)
+        except Exception:  # queue.Empty
+            pass
+        self.root.after(100, self._start_log_watcher)
+
+    def _log_message_internal(self, message):
+        """Internal method to update the console text widget and redirect progress to status bar"""
+        clean_msg = message.strip()
+
+        # Redirect [download] progress to the status bar instead of the console
+        # Typically looks like: [download]  1.2% of 10.00MiB at ...
+        if clean_msg.startswith('[download]') and '%' in clean_msg:
+            # Strip '[download]' prefix for a cleaner look as requested
+            display_msg = clean_msg.replace('[download]', '').strip()
+            self.progress_var.set(display_msg)
+            # Clear progress bar once finished or moved to next stage
+            if '100%' in clean_msg:
+                self.root.after(3000, lambda: self.progress_var.set('') if '100%' in self.progress_var.get() else None)
+            return
+
+        self.console.config(state=tk.NORMAL)
+        # Check if we were already at the bottom before adding content
+        at_bottom = self.console.yview()[1] == 1.0
+        self.console.insert(tk.END, message + '\n')
+        if at_bottom:
+            self.console.see(tk.END)
+        self.console.config(state=tk.DISABLED)
+
+    def log_message(self, message):
+        """Add message to the thread-safe queue and stdout for debugging."""
+        msg_str = str(message)
+        # Always output to terminal for visibility if GUI logs are failing or slow
+        print(msg_str)
+
+        if hasattr(self, 'log_queue'):
+            self.log_queue.put(msg_str)
