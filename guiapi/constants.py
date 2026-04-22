@@ -23,6 +23,5 @@ GUI_DEFAULT_STATE = {
     'language': 'auto',
     'url_entry': 'https://www.youtube.com/watch?v=DtPmasWzmu4&list=PLqyUAJYG3AWzd2mRGVLgCNKXbFcE4mAAk',
     'cookies_from_browser': 'chrome',
-    'format': 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / bv*+ba/b',
-    'merge_output_format': 'mp4',
+    'format': 'bv*[height<=1080]+ba',
 }
