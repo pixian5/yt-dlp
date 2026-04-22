@@ -959,18 +959,20 @@ class YtDlpGUI(DownloaderMixin):
         tree_frame = ttk.Frame(frame)
         tree_frame.pack(fill=tk.BOTH, expand=True)
 
-        columns = ('status', 'index', 'title')
+        columns = ('status', 'index', 'title', 'orig_idx')
         self.playlist_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', selectmode='extended')
 
         # Define headings
         self.playlist_tree.heading('status', text=' ', anchor=tk.CENTER)
         self.playlist_tree.heading('index', text='#')
         self.playlist_tree.heading('title', text='Title')
+        self.playlist_tree.heading('orig_idx', text='HIDDEN')
 
         # Define columns
         self.playlist_tree.column('status', width=40, anchor=tk.CENTER, stretch=False)
         self.playlist_tree.column('index', width=60, anchor=tk.CENTER, stretch=False)
         self.playlist_tree.column('title', width=400, anchor=tk.W)
+        self.playlist_tree.column('orig_idx', width=0, stretch=False)
 
         # Scrollbar
         tree_scroll = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.playlist_tree.yview)
@@ -2617,13 +2619,11 @@ class YtDlpGUI(DownloaderMixin):
                 filtered_entries = list(reversed(filtered_entries))
 
             total_visible = len(filtered_entries)
-            self.vis_to_orig = {}
+
             for j, (original_idx, title) in enumerate(filtered_entries):
-                # FIXED LOGIC: Top row gets the max number, Bottom row gets 1.
-                # Top row is ALWAYS downloaded first.
-                visual_idx = total_visible - j
-                self.vis_to_orig[visual_idx] = original_idx
-                self.playlist_tree.insert('', tk.END, values=('☑', visual_idx, title))
+                # 视觉序号：仅仅为了方便看，不用于计算
+                display_idx = total_visible - j
+                self.playlist_tree.insert('', tk.END, values=('☑', display_idx, title, original_idx))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')

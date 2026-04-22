@@ -327,14 +327,14 @@ class DownloaderMixin:
         
         # 如果当前 URL 就是解析过的播放列表，则读取勾选状态
         if (hasattr(self, 'playlist_parsed_url') and self.playlist_parsed_url == current_url 
-            and hasattr(self, 'playlist_tree') and hasattr(self, 'vis_to_orig')):
+            and hasattr(self, 'playlist_tree')):
             
             for item in self.playlist_tree.get_children():
                 values = self.playlist_tree.item(item, 'values')
-                if values and values[0] == '☑':
-                    visual_idx = int(values[1])
-                    if visual_idx in self.vis_to_orig:
-                        items_to_download.append(str(self.vis_to_orig[visual_idx]))
+                # values[0]=☑, values[1]=显示序号, values[2]=标题, values[3]=真实索引
+                if values and len(values) >= 4 and values[0] == '☑':
+                    real_idx = values[3]
+                    items_to_download.append(str(real_idx))
         
         if items_to_download:
             opts['playlist_items'] = ','.join(items_to_download)
