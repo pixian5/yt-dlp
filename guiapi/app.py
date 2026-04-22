@@ -2618,12 +2618,10 @@ class YtDlpGUI(DownloaderMixin):
             if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
                 filtered_entries = list(reversed(filtered_entries))
 
-            total_visible = len(filtered_entries)
 
-            for j, (original_idx, title) in enumerate(filtered_entries):
-                # 视觉序号：仅仅为了方便看，不用于计算
-                display_idx = total_visible - j
-                self.playlist_tree.insert('', tk.END, values=('☑', display_idx, title, original_idx))
+            for original_idx, title in filtered_entries:
+                # 直接显示真实索引，不再进行数学换算，确保所见即所得
+                self.playlist_tree.insert('', tk.END, values=('☑', original_idx, title, original_idx))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')
