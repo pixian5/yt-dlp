@@ -2990,14 +2990,17 @@ class YtDlpGUI:
 
                 full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
 
-                self.current_process = subprocess.Popen(
-                    full_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    bufsize=1,
-                    preexec_fn=os.setpgrp,  # noqa: PLW1509 Create process group for easy mass-kill
-                )
+                popen_kwargs = {
+                    'stdout': subprocess.PIPE,
+                    'stderr': subprocess.STDOUT,
+                    'universal_newlines': True,
+                    'bufsize': 1,
+                }
+                if os.name == 'nt':
+                    popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+                else:
+                    popen_kwargs['start_new_session'] = True
+                self.current_process = subprocess.Popen(full_cmd, **popen_kwargs)
                 process = self.current_process
 
                 if process.stdout:
@@ -3047,9 +3050,12 @@ class YtDlpGUI:
 
             try:
                 # Kill the entire process group (including child processes like ffmpeg)
-                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-                p.terminate()
-                p.kill()
+                if os.name != 'nt':
+                    with contextlib.suppress(ProcessLookupError, OSError):
+                        os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+                with contextlib.suppress(ProcessLookupError):
+                    p.terminate()
+                    p.kill()
             except Exception as e:
                 self.log_message(f'[DEBUG] Stop error: {e}')
 
@@ -3126,8 +3132,7 @@ class YtDlpGUI:
                 visual_idx = int(vals[1])
 
                 if checked:
-                    visual_idx = int(vals[1])
-                    gui_title = str(vals[2])  # Defined here!
+                    gui_title = str(vals[2])
                     original_idx = vis_to_orig_map.get(visual_idx, visual_idx)
                     task_args = []
                     skip = False
@@ -3148,7 +3153,7 @@ class YtDlpGUI:
                     # Always use the specific playlist URL for individual tasks
                     task_args.append(url)
                     filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
-                    # Remove unsave characters
+                    # Remove unsafe characters
                     filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
 
                     # Handle playlist subfolder
