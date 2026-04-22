@@ -321,7 +321,26 @@ class DownloaderMixin:
             opts['geo_bypass_ip_block'] = self.geo_bypass_ip_block.get()
 
         # Video selection
-        if self.playlist_items.get():
+        # 修复：优先从“播放列表”选项卡的勾选状态中获取项目
+        items_to_download = []
+        current_url = self.url_entry.get().strip() if hasattr(self, 'url_entry') else ''
+        
+        # 如果当前 URL 就是解析过的播放列表，则读取勾选状态
+        if (hasattr(self, 'playlist_parsed_url') and self.playlist_parsed_url == current_url 
+            and hasattr(self, 'playlist_tree') and hasattr(self, 'vis_to_orig')):
+            
+            for item in self.playlist_tree.get_children():
+                values = self.playlist_tree.item(item, 'values')
+                if values and values[0] == '☑':
+                    visual_idx = int(values[1])
+                    if visual_idx in self.vis_to_orig:
+                        items_to_download.append(str(self.vis_to_orig[visual_idx]))
+        
+        if items_to_download:
+            opts['playlist_items'] = ','.join(items_to_download)
+            self.log_message(self.translate_concat('Selected playlist items: ', opts['playlist_items']))
+        elif hasattr(self, 'playlist_items') and self.playlist_items.get():
+            # 回退到手动输入的项目范围
             opts['playlist_items'] = self.playlist_items.get()
         if self.playlist_start.get():
             opts['playliststart'] = int(self.playlist_start.get())
