@@ -16,8 +16,8 @@ import signal
 import tempfile
 import atexit
 
-from .constants import LANGUAGE_OPTIONS, SB_CATEGORIES, GUI_DEFAULT_STATE
-from .translations import TRANSLATIONS
+from gui.constants import LANGUAGE_OPTIONS, SB_CATEGORIES, GUI_DEFAULT_STATE
+from gui.translations import TRANSLATIONS
 
 
 class YtDlpGUI:
@@ -2517,9 +2517,8 @@ class YtDlpGUI:
 
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
             lang_to_use = self.metadata_lang.get().split('(')[-1].split(')')[0]
+            args.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
 
-        args.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
-        # SHOTGUN APPROACH: Inject HTTP header to force server response language
         args.extend(['--add-header', f'Accept-Language:{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'])
 
         # URL or batch file
@@ -2892,8 +2891,9 @@ class YtDlpGUI:
         # Extractor options
         extractor_args = []
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
-            extractor_args.append(f'youtube:lang={self.metadata_lang.get()}')
-
+            lang_code = self.metadata_lang.get().split('(')[-1].split(')')[0] if '(' in self.metadata_lang.get() else self.metadata_lang.get()
+            if not url.startswith('https://www.youtube.com/playlist'):
+                extractor_args.append(f'youtube:lang={lang_code}')
         if self.extractor_args.get():
             extractor_args.append(self.extractor_args.get())
 
@@ -3210,7 +3210,6 @@ class YtDlpGUI:
             lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
             self.log_message(f'[DEBUG] Parsing playlist metadata using interface-linked language: {lang_to_use}')
-            cmd.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
             cmd.extend(['--add-header', f'Accept-Language:{lang_to_use},zh-CN;q=0.9,zh;q=0.8'])
             cmd.extend(['--geo-bypass'])
 

@@ -195,29 +195,56 @@ class DownloaderMixin:
         self.ensure_all_tabs_built()
         opts = {}
 
-        # Map GUI internal language codes to metadata language codes
+        # 1. 统一语言映射逻辑
         lang_map = {
-            'zh': 'zh-CN',
-            'en': 'en',
-            'ru': 'ru',
-            'ja': 'ja',
-            'ko': 'ko',
-            'es': 'es',
-            'fr': 'fr',
-            'de': 'de',
+            'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 
+            'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'
         }
         gui_lang_code = getattr(self, 'current_language', 'zh')
         lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
-        if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
-            lang_to_use = self.metadata_lang.get().split('(')[-1].split(')')[0]
+        # 2. 从界面选择中提取语言代码
+        if hasattr(self, 'metadata_lang') and self.metadata_lang.get():
+            val = self.metadata_lang.get()
+            if val and val != self.tr('Default (Auto)'):
+                lang_to_use = val.split('(')[-1].split(')')[0] if '(' in val else val
 
-        # Extractor args for YouTube language
-        extractor_args = {'youtube': {'lang': lang_to_use}}
-        if hasattr(self, 'extractor_args') and self.extractor_args.get():
-            # Parse and merge
-            pass  # Simplified for now
-        opts['extractor_args'] = extractor_args
+        # 3. 构建 extractor_args
+        # 修复：同时为 youtube 和 youtube:tab (播放列表) 设置语言
+        final_extractor_args = {}
+        
+        if lang_to_use:
+            # 确保使用完整的语言代码，并包装在列表中，防止 yt-dlp 将其迭代为单个字符(如 'z')
+            final_extractor_args['youtube'] = {'lang': [lang_to_use]}
+            final_extractor_args['youtube:tab'] = {'lang': [lang_to_use]}
+
+
+        if hasattr(self, 'extractor_args') and hasattr(self.extractor_args, 'get'):
+            raw_args = self.extractor_args.get().strip()
+            # 格式解析：extractor:param=val
+            if raw_args:
+                for pair in raw_args.split():
+                    if ':' in pair:
+                        ext_key, remainder = pair.split(':', 1)
+                        if ext_key not in final_extractor_args:
+                            final_extractor_args[ext_key] = {}
+                        
+                        if '=' in remainder:
+                            param_key, param_val = remainder.split('=', 1)
+                            # yt-dlp API 期望参数值是一个列表
+                            if param_key not in final_extractor_args[ext_key]:
+                                final_extractor_args[ext_key][param_key] = []
+                            if isinstance(final_extractor_args[ext_key][param_key], list):
+                                final_extractor_args[ext_key][param_key].append(param_val)
+                            else:
+                                # Fallback if it was already set by lang logic as a single-element list
+                                final_extractor_args[ext_key][param_key] = [param_val]
+                        else:
+                            # 只有 key:param 形式，没有 =val
+                            final_extractor_args[ext_key][remainder] = [True]
+        
+        if final_extractor_args:
+            opts['extractor_args'] = final_extractor_args
 
         # HTTP headers
         opts['http_headers'] = {'Accept-Language': f'{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'}
@@ -684,3 +711,10 @@ class DownloaderMixin:
 
         cmd_parts.append(url)
         return ' '.join(cmd_parts)
+
+    def copy_command(self):
+        """Copy generated command to clipboard"""
+        import pyperclip
+        cmd = self.generate_command()
+        pyperclip.copy(cmd)
+        self.log_message(self.tr('Command copied to clipboard.'))

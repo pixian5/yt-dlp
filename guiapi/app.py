@@ -9,6 +9,7 @@ import contextlib
 import json
 import locale
 import os
+import subprocess
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
@@ -18,9 +19,9 @@ import threading
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
-from .constants import LANGUAGE_OPTIONS, SB_CATEGORIES, GUI_DEFAULT_STATE
-from .translations import TRANSLATIONS
-from .downloader import DownloaderMixin
+from guiapi.constants import LANGUAGE_OPTIONS, SB_CATEGORIES, GUI_DEFAULT_STATE
+from guiapi.translations import TRANSLATIONS
+from guiapi.downloader import DownloaderMixin
 
 
 class YtDlpGUI(DownloaderMixin):
@@ -2535,9 +2536,19 @@ class YtDlpGUI(DownloaderMixin):
             gui_lang_code = getattr(self, 'current_language', 'zh')
             lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
-            self.log_message(f'[DEBUG] Parsing playlist metadata using interface-linked language: {lang_to_use}')
-            cmd.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
+            # Override with Metadata Language selection if set
+            if hasattr(self, 'metadata_lang') and self.metadata_lang.get():
+                val = self.metadata_lang.get()
+                if val and val != self.tr('Default (Auto)'):
+                    lang_to_use = val.split('(')[-1].split(')')[0] if '(' in val else val
+
+            self.log_message(f'[DEBUG] Parsing playlist metadata using language: {lang_to_use}')
             cmd.extend(['--add-header', f'Accept-Language:{lang_to_use},zh-CN;q=0.9,zh;q=0.8'])
+            
+            # Also pass as extractor-args for the CLI parser
+            if lang_to_use:
+                cmd.extend(['--extractor-args', f'youtube:lang={lang_to_use};youtube:tab:lang={lang_to_use}'])
+            
             cmd.extend(['--geo-bypass'])
 
             # Keep playlist parsing aligned with the actual download/auth context.
