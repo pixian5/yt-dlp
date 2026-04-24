@@ -3028,11 +3028,16 @@ class YtDlpGUI:
 
                 full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
 
+                # 设置环境变量，确保能找到 deno
+                env = os.environ.copy()
+                env['PATH'] = '/opt/homebrew/bin:/usr/local/bin:' + env.get('PATH', '')
+
                 popen_kwargs = {
                     'stdout': subprocess.PIPE,
                     'stderr': subprocess.STDOUT,
                     'universal_newlines': True,
                     'bufsize': 1,
+                    'env': env,
                 }
                 if os.name == 'nt':
                     popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
