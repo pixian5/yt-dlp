@@ -3293,10 +3293,25 @@ class YtDlpGUI:
             stdout, stderr = process.communicate()
             if process.returncode == 0:
                 info = json.loads(stdout)
+                # Handle both playlists and single videos
                 if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
                     self.playlist_parsed_url = url
                     self.playlist_entries_data = info['entries']
                     self.current_playlist_metadata_title = info.get('title', 'Playlist')
+                    self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
+                    return
+                elif info.get('_type') == 'video' or (info.get('_type') == 'url' and info.get('ie_key') == 'Youtube'):
+                    # Single video detected - treat it as a playlist with one entry
+                    self.playlist_parsed_url = url
+                    video_info = {
+                        '_type': 'video',
+                        'id': info.get('id', ''),
+                        'title': info.get('title', 'Video'),
+                        'url': info.get('url') or info.get('webpage_url', url),
+                        'ie_key': info.get('extractor_key', 'Youtube'),
+                    }
+                    self.playlist_entries_data = [video_info]
+                    self.current_playlist_metadata_title = info.get('title', 'Single Video')
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
                 else:
