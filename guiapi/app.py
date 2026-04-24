@@ -3250,7 +3250,8 @@ class YtDlpGUI:
             self.ensure_all_tabs_built()
             self.log_message(self.tr('Checking if URL is a playlist...'))
             # ADDED --no-cache-dir to ensure we get fresh language-specific metadata
-            cmd = [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', '--no-cache-dir']
+            # ADDED --remote-components for JS challenge solving (deno)
+            cmd = [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', '--no-cache-dir', '--remote-components', 'ejs:github']
 
             # MAP GUI Language to Metadata Language
             lang_map = {'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'}
@@ -3277,12 +3278,17 @@ class YtDlpGUI:
 
             cmd.append(url)
 
+            # 设置环境变量，确保能找到 deno
+            env = os.environ.copy()
+            env['PATH'] = '/opt/homebrew/bin:/usr/local/bin:' + env.get('PATH', '')
+
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
                 bufsize=1,
+                env=env,
             )
             stdout, stderr = process.communicate()
             if process.returncode == 0:
