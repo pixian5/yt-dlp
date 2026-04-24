@@ -643,6 +643,10 @@ class YtDlpGUI:
         self.download_btn.pack(side=tk.LEFT, padx=5)
         self.register_translatable_widget(self.download_btn, 'Download')
 
+        btn_open_folder = ttk.Button(button_frame, text='Open Output Folder', command=self.open_output_folder, width=15)
+        btn_open_folder.pack(side=tk.LEFT, padx=5)
+        self.register_translatable_widget(btn_open_folder, 'Open Output Folder')
+
         btn_list = ttk.Button(button_frame, text='List Formats', command=self.list_formats, width=15)
         btn_list.pack(side=tk.LEFT, padx=5)
         self.register_translatable_widget(btn_list, 'List Formats')
@@ -1696,6 +1700,11 @@ class YtDlpGUI:
         ttk.Label(scrollable_frame, text='(comma-separated, e.g., "en,fr,de")').grid(row=row, column=3, sticky=tk.W, pady=5)
         row += 1
 
+        self.smart_zh_subs = tk.BooleanVar()
+        ttk.Checkbutton(scrollable_frame, text='智能下载中文字幕（优先手动字幕，否则自动翻译）',
+                        variable=self.smart_zh_subs).grid(row=row, column=0, columnspan=3, sticky=tk.W, pady=2, padx=5)
+        row += 1
+
         self.embed_subs = tk.BooleanVar()
         ttk.Checkbutton(scrollable_frame, text='Embed subtitles (--embed-subs)',
                         variable=self.embed_subs).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
@@ -2447,6 +2456,27 @@ class YtDlpGUI:
             self.output_dir.delete(0, tk.END)
             self.output_dir.insert(0, dirname)
 
+    def open_output_folder(self):
+        output_dir = self.output_dir.get().strip()
+        if not output_dir:
+            messagebox.showwarning(self.tr('Warning'), self.tr('Please set an output directory first'))
+            return
+        if not os.path.exists(output_dir):
+            messagebox.showwarning(self.tr('Warning'), self.tr('Output directory does not exist'))
+            return
+        # Open folder using platform-specific command
+        import platform
+        system = platform.system()
+        try:
+            if system == 'Darwin':  # macOS
+                subprocess.run(['open', output_dir])
+            elif system == 'Windows':
+                subprocess.run(['explorer', output_dir])
+            else:  # Linux
+                subprocess.run(['xdg-open', output_dir])
+        except Exception as e:
+            messagebox.showerror(self.tr('Error'), f"{self.tr('Failed to open folder')}:\n{e}")
+
     def browse_info_json(self):
         filename = filedialog.askopenfilename(
             title=self.tr('Select Info JSON'),
@@ -2731,7 +2761,15 @@ class YtDlpGUI:
             args.append('--list-subs')
         if self.sub_format.get():
             args.extend(['--sub-format', self.sub_format.get()])
-        if self.sub_langs.get():
+        if self.smart_zh_subs.get():
+            # 智能下载中文字幕：优先手动字幕，然后尝试从各种常见语言自动翻译的中文字幕
+            if not self.sub_langs.get():
+                args.extend(['--sub-langs', 'zh,zh-CN,zh-TW,zh-Hans,zh-Hant,en-zh,ja-zh,ko-zh,fr-zh,de-zh,es-zh,ru-zh'])
+            if not self.write_auto_subs.get():
+                args.append('--write-auto-subs')
+            if not self.write_subs.get():
+                args.append('--write-subs')
+        elif self.sub_langs.get():
             args.extend(['--sub-langs', self.sub_langs.get()])
         if self.embed_subs.get():
             args.append('--embed-subs')
