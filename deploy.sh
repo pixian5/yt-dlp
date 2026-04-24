@@ -97,7 +97,7 @@ log_info "已复制到: ${APP_DIR}"
 
 # 5. 运行检测（10秒闪退检测）
 echo ""
-log_info "[5/6] 正在运行检测（60秒闪退检测）..."
+log_info "[5/6] 正在运行检测（100秒闪退检测）..."
 
 # 启动程序
 open "${APP_DIR}"
@@ -112,10 +112,10 @@ if [ -z "$APP_PID" ]; then
 fi
 
 log_info "程序已启动，PID: $APP_PID"
-log_info "等待 60 秒检测是否闪退..."
+log_info "等待 100 秒检测是否闪退..."
 
-# 等待60秒
-for i in {1..60}; do
+# 等待100秒
+for i in {1..100}; do
     sleep 1
     if ! pgrep -q -f "${APP_NAME}.app/Contents/MacOS"; then
         log_error "程序已闪退！（在第 ${i} 秒）"
@@ -125,7 +125,7 @@ for i in {1..60}; do
 done
 echo ""
 
-log_info "检测通过：程序正常运行超过 60 秒"
+log_info "检测通过：程序正常运行超过 100 秒"
 
 # 关闭测试运行的程序
 log_info "关闭测试实例..."
@@ -140,11 +140,8 @@ log_info "[6/6] 正在提交并推送到 git..."
 if git diff --quiet && git diff --cached --quiet; then
     log_warn "没有需要提交的更改"
 else
-    # 生成提交信息
+    # 生成提交信息（使用中文）
     COMMIT_MSG="部署更新: $(date '+%Y-%m-%d %H:%M:%S')
-
-- 更新 GUI 功能
-- 自动部署构建
 
 Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
