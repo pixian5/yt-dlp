@@ -555,6 +555,10 @@ class YtDlpGUI:
         """Apply saved GUI-only state to controls that already exist."""
         if not self._pending_gui_state:
             return
+
+        # Handle bulk_urls separately (not in _stateful_controls)
+        bulk_urls = self._pending_gui_state.pop('bulk_urls', None)
+
         for name, value in list(self._pending_gui_state.items()):
             widget = self._stateful_controls.get(name)
             if widget is None:
@@ -566,6 +570,10 @@ class YtDlpGUI:
             elif isinstance(widget, scrolledtext.ScrolledText):
                 self._set_text_value(widget, value or '')
             del self._pending_gui_state[name]
+
+        # Restore bulk_urls after all tabs are built
+        if bulk_urls:
+            self.root.after(100, lambda urls=bulk_urls: self._restore_bulk_rows(urls))
 
     def on_window_close(self):
         """Persist GUI-only state on close and then exit."""
@@ -760,18 +768,20 @@ class YtDlpGUI:
         lbl_list.pack(side=tk.LEFT)
         self.register_translatable_widget(lbl_list, 'Batch URLs (one per line):')
 
-        # Control buttons will be placed below the batch URLs text area (added after the text widget)
+        btn_paste_top = ttk.Button(header_row, text=self.tr('Paste to Top'), command=self.paste_bulk_to_top)
+        btn_paste_top.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_paste_top, 'Paste to Top')
+        btn_paste_bottom = ttk.Button(header_row, text=self.tr('Paste to Bottom'), command=self.paste_bulk_to_bottom)
+        btn_paste_bottom.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_paste_bottom, 'Paste to Bottom')
+        btn_parse_all = ttk.Button(header_row, text=self.tr('Parse All'), command=self.parse_all_bulk_urls)
+        btn_parse_all.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_parse_all, 'Parse All')
 
         # Keep clear pool in header row to the right
         btn_clear = ttk.Button(header_row, text=self.tr('Clear Pool'), command=self.clear_all_bulk_rows)
         btn_clear.pack(side=tk.RIGHT)
         self.register_translatable_widget(btn_clear, 'Clear Pool')
-
-        self.batch_urls_text = scrolledtext.ScrolledText(list_row, height=5, wrap=tk.WORD)
-        self.batch_urls_text.pack(fill=tk.X, expand=True)
-        self.batch_urls_text.bind('<KeyRelease>', self.trigger_autosave)
-
-        # NOTE: Controls row for paste/parse will be placed after the dynamic rows
 
         dyn_container = ttk.Frame(frame)
         dyn_container.pack(fill=tk.BOTH, expand=True)
@@ -828,21 +838,68 @@ class YtDlpGUI:
         """Compatibility alias for previous function name."""
         self.remove_bulk_row(frame)
 
-    def paste_bulk_urls_smart(self):
-        """Smartly detect and distribute URLs from clipboard."""
+    def _extract_urls_from_clipboard(self):
+        """Extract HTTP URLs from clipboard text (case insensitive)."""
         try:
             raw = self.root.clipboard_get()
-            lines = [l.strip() for l in raw.splitlines() if l.strip()]
-            if not lines:
-                return
-            if self.bulk_rows and not self.bulk_rows[0]['var'].get().strip():
-                self.bulk_rows[0]['var'].set(lines[0])
-                lines = lines[1:]
-            for line in lines:
-                self.add_bulk_row(line)
-            self.log_message(self.tr('Imported {} URLs into pool.').replace('{}', str(len(lines) + 1)))
-        except Exception as e:
-            self.log_message(f'Paste failed: {e}')
+            import re
+            urls = re.findall(r'https?://[^\s<>"{}|\\^`\[\]]+', raw, re.IGNORECASE)
+            return [u.strip() for u in urls if u.strip()]
+        except Exception:
+            return []
+
+    def paste_bulk_to_top(self):
+        """Paste URLs from clipboard to the top of bulk rows."""
+        urls = self._extract_urls_from_clipboard()
+        if not urls:
+            self.log_message('No HTTP URLs found in clipboard')
+            return
+        # Insert at beginning
+        for url in reversed(urls):
+            self.add_bulk_row_at_index(0, url)
+        self.log_message(f'Pasted {len(urls)} URL(s) to top')
+
+    def paste_bulk_to_bottom(self):
+        """Paste URLs from clipboard to the bottom of bulk rows."""
+        urls = self._extract_urls_from_clipboard()
+        if not urls:
+            self.log_message('No HTTP URLs found in clipboard')
+            return
+        for url in urls:
+            self.add_bulk_row(url)
+        self.log_message(f'Pasted {len(urls)} URL(s) to bottom')
+
+    def parse_all_bulk_urls(self):
+        """Parse all URLs in bulk rows."""
+        for row in self.bulk_rows:
+            url = row['var'].get().strip()
+            if url:
+                self._parse_single_row_url(url)
+
+    def add_bulk_row_at_index(self, index, initial_text=''):
+        """Add a bulk row at specific index position."""
+        row = ttk.Frame(self.bulk_scroll_frame)
+        var = tk.StringVar(value=initial_text)
+        var.trace_add('write', self.trigger_autosave)
+        entry = ttk.Entry(row, textvariable=var)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+
+        btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
+        btn_parse.pack(side=tk.LEFT, padx=2)
+        self.register_translatable_widget(btn_parse, 'Parse')
+
+        btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
+        btn_remove.pack(side=tk.LEFT)
+
+        # Insert into list at index
+        self.bulk_rows.insert(index, {'frame': row, 'var': var})
+        self.localize_widget_tree(row)
+
+        # Re-pack all rows in order
+        for r in self.bulk_rows:
+            r['frame'].pack_forget()
+        for r in self.bulk_rows:
+            r['frame'].pack(fill=tk.X, pady=2)
 
     def clear_all_bulk_rows(self):
         for row in self.bulk_rows[1:]:
@@ -850,8 +907,19 @@ class YtDlpGUI:
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
             self.bulk_rows[0]['var'].set('')
-        if hasattr(self, 'batch_urls_text') and self.batch_urls_text is not None:
-            self.batch_urls_text.delete('1.0', tk.END)
+
+    def _restore_bulk_rows(self, urls):
+        """Restore bulk_rows from saved URLs."""
+        if not urls:
+            return
+        # Clear existing rows first
+        for row in self.bulk_rows[1:]:
+            row['frame'].destroy()
+        if self.bulk_rows:
+            self.bulk_rows[0]['var'].set(urls[0] if urls else '')
+            urls = urls[1:]
+        for url in urls:
+            self.add_bulk_row(url)
 
     def _parse_single_row_url(self, url):
         url = (url or '').strip()
@@ -881,10 +949,6 @@ class YtDlpGUI:
                     urls.extend([line.strip() for line in f if line.strip() and not line.strip().startswith('#')])
             except Exception as e:
                 self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
-
-        if hasattr(self, 'batch_urls_text') and self.batch_urls_text is not None:
-            text_urls = [line.strip() for line in self.batch_urls_text.get('1.0', tk.END).splitlines() if line.strip()]
-            urls.extend(text_urls)
 
         for row in getattr(self, 'bulk_rows', []):
             value = row['var'].get().strip()
@@ -3558,6 +3622,9 @@ class YtDlpGUI:
                 gui_state[name] = widget.get()
             elif isinstance(widget, scrolledtext.ScrolledText):
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
+
+        # Save bulk_rows URLs
+        gui_state['bulk_urls'] = [row['var'].get().strip() for row in getattr(self, 'bulk_rows', []) if row['var'].get().strip()]
 
         return {
             'config_version': 1,
