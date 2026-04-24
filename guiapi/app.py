@@ -474,6 +474,12 @@ class YtDlpGUI:
             if value is not None:
                 self._pending_gui_state[name] = value
 
+        # Save bulk_rows URLs before destroying
+        if hasattr(self, 'bulk_rows'):
+            bulk_urls = [row['var'].get().strip() for row in self.bulk_rows if row['var'].get().strip()]
+            if bulk_urls:
+                self._pending_gui_state['bulk_urls'] = bulk_urls
+
         for child in frame.winfo_children():
             child.destroy()
 
@@ -3624,7 +3630,9 @@ class YtDlpGUI:
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
 
         # Save bulk_rows URLs
-        gui_state['bulk_urls'] = [row['var'].get().strip() for row in getattr(self, 'bulk_rows', []) if row['var'].get().strip()]
+        bulk_list = getattr(self, 'bulk_rows', [])
+        bulk_urls = [row['var'].get().strip() for row in bulk_list if row['var'].get().strip()]
+        gui_state['bulk_urls'] = bulk_urls
 
         return {
             'config_version': 1,
