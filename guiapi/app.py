@@ -2762,9 +2762,8 @@ class YtDlpGUI:
         if self.sub_format.get():
             args.extend(['--sub-format', self.sub_format.get()])
         if self.smart_zh_subs.get():
-            # 智能下载中文字幕：优先手动字幕，然后尝试从各种常见语言自动翻译的中文字幕
-            if not self.sub_langs.get():
-                args.extend(['--sub-langs', 'zh,zh-CN,zh-TW,zh-Hans,zh-Hant,en-zh,ja-zh,ko-zh,fr-zh,de-zh,es-zh,ru-zh'])
+            # 智能下载中文字幕：强制使用智能列表，忽略 sub_langs 输入框
+            args.extend(['--sub-langs', 'zh,zh-CN,zh-TW,zh-Hans,zh-Hant,en-zh,ja-zh,ko-zh,fr-zh,de-zh,es-zh,ru-zh'])
             if not self.write_auto_subs.get():
                 args.append('--write-auto-subs')
             if not self.write_subs.get():
