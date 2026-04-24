@@ -3026,8 +3026,7 @@ class YtDlpGUI:
                 self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
                 full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
-
-                # 设置环境变量，确保能找到 deno
+                self.log_message('[DEBUG] 执行命令: ' + ' '.join(full_cmd))
                 env = os.environ.copy()
                 env['PATH'] = '/opt/homebrew/bin:/usr/local/bin:' + env.get('PATH', '')
 
