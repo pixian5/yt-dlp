@@ -1700,9 +1700,36 @@ class YtDlpGUI:
         ttk.Label(scrollable_frame, text='(comma-separated, e.g., "en,fr,de")').grid(row=row, column=3, sticky=tk.W, pady=5)
         row += 1
 
-        self.smart_zh_subs = tk.BooleanVar()
-        ttk.Checkbutton(scrollable_frame, text='智能下载中文字幕（优先手动字幕，否则自动翻译）',
-                        variable=self.smart_zh_subs).grid(row=row, column=0, columnspan=3, sticky=tk.W, pady=2, padx=5)
+        ttk.Label(scrollable_frame, text='Smart subtitle language:').grid(row=row, column=0, sticky=tk.W, pady=5, padx=5)
+        self.smart_subtitle_lang_map = {
+            'Disabled': '',
+            '中文（简体） (zh-CN)': 'zh-CN',
+            'English (en)': 'en',
+            '日本語 (ja)': 'ja',
+            '한국어 (ko)': 'ko',
+            'Español (es)': 'es',
+            'Français (fr)': 'fr',
+            'Deutsch (de)': 'de',
+            'Русский (ru)': 'ru',
+        }
+        self.smart_subtitle_language = ttk.Combobox(
+            scrollable_frame,
+            width=30,
+            values=list(self.smart_subtitle_lang_map.keys()),
+            state='readonly',
+        )
+        default_smart_lang = 'Disabled'
+        # 兼容旧配置：若此前启用了 smart_zh_subs，则迁移为 zh-CN
+        if self._pending_gui_state.get('smart_zh_subs') and not self._pending_gui_state.get('smart_subtitle_language'):
+            default_smart_lang = '中文（简体） (zh-CN)'
+        self.smart_subtitle_language.set(default_smart_lang)
+        self.smart_subtitle_language.grid(row=row, column=1, columnspan=2, sticky=tk.W, pady=5, padx=5)
+        row += 1
+
+        ttk.Label(
+            scrollable_frame,
+            text='Smart subtitle language (download target language; auto-translate when unavailable)',
+        ).grid(row=row, column=0, columnspan=4, sticky=tk.W, pady=(0, 5), padx=5)
         row += 1
 
         self.embed_subs = tk.BooleanVar()
@@ -1724,6 +1751,46 @@ class YtDlpGUI:
         ttk.Checkbutton(scrollable_frame, text='Do not embed thumbnail (--no-embed-thumbnail)',
                         variable=self.no_embed_thumbnail).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2, padx=5)
         row += 1
+
+    def get_smart_subtitle_lang_code(self):
+        """Return selected smart subtitle target language code, or empty string if disabled."""
+        if not hasattr(self, 'smart_subtitle_language') or not hasattr(self, 'smart_subtitle_lang_map'):
+            return ''
+        selected = self.smart_subtitle_language.get().strip()
+        return self.smart_subtitle_lang_map.get(selected, '')
+
+    def build_smart_sub_langs(self, target_lang):
+        """Build a robust --sub-langs list: prefer target language, then translated variants to target."""
+        if not target_lang:
+            return ''
+
+        direct_lang_variants = {
+            'zh-CN': ['zh', 'zh-CN', 'zh-TW', 'zh-Hans', 'zh-Hant'],
+            'en': ['en', 'en-US', 'en-GB'],
+            'ja': ['ja'],
+            'ko': ['ko'],
+            'es': ['es', 'es-419', 'es-ES'],
+            'fr': ['fr', 'fr-FR'],
+            'de': ['de', 'de-DE'],
+            'ru': ['ru', 'ru-RU'],
+        }
+
+        langs = []
+
+        def _append_unique(lang_code):
+            if lang_code and lang_code not in langs:
+                langs.append(lang_code)
+
+        for lang_code in direct_lang_variants.get(target_lang, [target_lang]):
+            _append_unique(lang_code)
+
+        # 常见翻译来源字幕，按“源语-目标语”补充回退
+        source_langs = ['en', 'ja', 'ko', 'fr', 'de', 'es', 'ru', 'zh', 'zh-CN', 'zh-TW']
+        for src in source_langs:
+            if src != target_lang:
+                _append_unique(f'{src}-{target_lang}')
+
+        return ','.join(langs)
 
     def create_authentication_tab(self, frame=None):
         """Create Authentication Options tab"""
@@ -2761,11 +2828,12 @@ class YtDlpGUI:
             args.append('--list-subs')
         if self.sub_format.get():
             args.extend(['--sub-format', self.sub_format.get()])
-        if self.smart_zh_subs.get():
-            # 智能下载中文字幕：强制使用智能列表，强制下载自动字幕
-            args.extend(['--sub-langs', 'zh,zh-CN,zh-TW,zh-Hans,zh-Hant,en-zh,ja-zh,ko-zh,fr-zh,de-zh,es-zh,ru-zh'])
-            # zh-Hans/zh-Hant 是自动字幕，必须加 --write-auto-subs 才能下载
-            args.append('--write-auto-subs')
+        smart_target_lang = self.get_smart_subtitle_lang_code()
+        if smart_target_lang:
+            # 智能字幕：优先下载目标语言字幕；若无则尝试自动翻译到目标语言
+            args.extend(['--sub-langs', self.build_smart_sub_langs(smart_target_lang)])
+            if not self.write_auto_subs.get():
+                args.append('--write-auto-subs')
             if not self.write_subs.get():
                 args.append('--write-subs')
         elif self.sub_langs.get():
