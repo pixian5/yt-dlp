@@ -112,10 +112,10 @@ if [ -z "$APP_PID" ]; then
 fi
 
 log_info "程序已启动，PID: $APP_PID"
-log_info "等待 10 秒检测是否闪退..."
+log_info "等待 30 秒检测是否闪退..."
 
-# 等待10秒
-for i in {1..10}; do
+# 等待30秒
+for i in {1..30}; do
     sleep 1
     if ! pgrep -q -f "${APP_NAME}.app/Contents/MacOS"; then
         log_error "程序已闪退！（在第 ${i} 秒）"
@@ -125,7 +125,7 @@ for i in {1..10}; do
 done
 echo ""
 
-log_info "检测通过：程序正常运行超过 10 秒"
+log_info "检测通过：程序正常运行超过 30 秒"
 
 # 关闭测试运行的程序
 log_info "关闭测试实例..."
