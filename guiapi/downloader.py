@@ -763,7 +763,8 @@ class DownloaderMixin:
     def _restore_download_button(self):
         if hasattr(self, 'download_btn'):
             # 恢复为绿色
-            self.download_btn.config(text=self.tr('Download'), bg='#28a745')
+            self.download_btn.config(text=self.tr('Download'), background='#28a745')
+            self.download_btn.update()
             self._translatable_widgets[self.download_btn] = 'Download'
 
     def on_download_btn_click(self):
@@ -841,7 +842,8 @@ class DownloaderMixin:
             return
 
         # Change button to Stop - 变为红色
-        self.download_btn.config(text=self.tr('Stop'), bg='#dc3545')
+        self.download_btn.config(text=self.tr('Stop'), background='#dc3545')
+        self.download_btn.update()
         self._translatable_widgets[self.download_btn] = 'Stop'
 
         output_dir = self.output_dir.get().strip()
