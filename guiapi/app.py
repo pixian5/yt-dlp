@@ -565,8 +565,11 @@ class YtDlpGUI:
         if not self._pending_gui_state:
             return
 
-        # Handle bulk_urls separately (not in _stateful_controls)
-        bulk_urls = self._pending_gui_state.pop('bulk_urls', None)
+        # Restore bulk_urls synchronously, but ONLY if the Batch tab has been built
+        if hasattr(self, 'batch_tab_frame') and self.batch_tab_frame in self._built_tabs:
+            bulk_urls = self._pending_gui_state.pop('bulk_urls', None)
+            if bulk_urls:
+                self._restore_bulk_rows(bulk_urls)
 
         for name, value in list(self._pending_gui_state.items()):
             widget = self._stateful_controls.get(name)
@@ -579,10 +582,6 @@ class YtDlpGUI:
             elif isinstance(widget, scrolledtext.ScrolledText):
                 self._set_text_value(widget, value or '')
             del self._pending_gui_state[name]
-
-        # Restore bulk_urls after all tabs are built
-        if bulk_urls:
-            self.root.after(100, lambda urls=bulk_urls: self._restore_bulk_rows(urls))
 
     def on_window_close(self):
         """Persist GUI-only state on close and then exit."""
@@ -727,9 +726,8 @@ class YtDlpGUI:
         self.add_lazy_tab('sponsorblock', 'SponsorBlock', self.create_sponsorblock_tab)
         self.add_lazy_tab('extractor', 'Extractor', self.create_extractor_tab)
         self.add_lazy_tab('advanced', 'Advanced', self.create_advanced_tab)
-
-        self.ensure_tab_built(batch_frame)
-        self._active_tab_frame = batch_frame
+        self.ensure_tab_built(self.batch_tab_frame)
+        self._active_tab_frame = self.batch_tab_frame
 
         # Output console at bottom
         console_frame = ttk.LabelFrame(self.root, text='Output Console', padding='5')
@@ -3658,9 +3656,12 @@ class YtDlpGUI:
                 gui_state[name] = widget.get('1.0', tk.END).rstrip('\n')
 
         # Save bulk_rows URLs
-        bulk_list = getattr(self, 'bulk_rows', [])
-        bulk_urls = [row['var'].get().strip() for row in bulk_list if row['var'].get().strip()]
-        gui_state['bulk_urls'] = bulk_urls
+        if 'bulk_urls' in self._pending_gui_state:
+            gui_state['bulk_urls'] = self._pending_gui_state['bulk_urls']
+        else:
+            bulk_list = getattr(self, 'bulk_rows', [])
+            bulk_urls = [row['var'].get().strip() for row in bulk_list if row['var'].get().strip()]
+            gui_state['bulk_urls'] = bulk_urls
 
         return {
             'config_version': 1,
