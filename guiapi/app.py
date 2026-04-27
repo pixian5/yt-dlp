@@ -3169,11 +3169,11 @@ class YtDlpGUI:
         try:
             total = len(tasks)
             for i, (idx, args) in enumerate(tasks):
-                self.log_message(self.translate_concat(f'[{i + 1}/{total}] Download Task: Index ', idx))
+                self.log_message(f'[{i + 1}/{total}] ' + self.tr('Download Task: Index ') + f'{idx}')
                 self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
                 full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
-                self.log_message('[DEBUG] 执行命令: ' + ' '.join(full_cmd))
+                self.log_message(self.tr('[DEBUG] 执行命令: ') + ' '.join(full_cmd))
                 env = os.environ.copy()
                 env['PATH'] = '/opt/homebrew/bin:/usr/local/bin:' + env.get('PATH', '')
 
@@ -3236,7 +3236,7 @@ class YtDlpGUI:
         self.on_download_btn_click()
 
     def on_download_btn_click(self):
-        self.log_message("[DEBUG] Download button clicked.")
+        self.log_message(self.tr("[DEBUG] Download button clicked."))
         if hasattr(self, 'current_process') and self.current_process:
             self.stop_download()
         else:
@@ -3286,18 +3286,18 @@ class YtDlpGUI:
                             count += 1
                         except Exception as e:
                             self.log_message(f'Failed to remove {filename}: {e}')
-            self.log_message(f'Cleanup finished. Removed {count} files.')
+            self.log_message(self.tr('Cleanup finished. Removed ') + f'{count}' + self.tr(' files.'))
         except Exception as e:
-            self.log_message(f'Error during cleanup: {e}')
+            self.log_message(self.tr('Error during cleanup: ') + str(e))
 
     def start_download(self):
         """Start download in a separate thread"""
-        self.log_message('[DEBUG] start_download called')
+        self.log_message(self.tr('[DEBUG] start_download called'))
         url = self.url_entry.get().strip()
-        self.log_message(f'[DEBUG] url={url!r}')
+        self.log_message(self.translate_concat('[DEBUG] url=', f'{url!r}'))
         try:
             base_args = self.build_command_args()
-            self.log_message(f'[DEBUG] base_args count={len(base_args) if base_args else 0}')
+            self.log_message(self.translate_concat('[DEBUG] base_args count=', len(base_args) if base_args else 0))
         except Exception as e:
             import traceback
             self.log_message(f'[DEBUG] build_command_args CRASHED: {e}')
@@ -3318,10 +3318,11 @@ class YtDlpGUI:
         self._translatable_widgets[self.download_btn] = 'Stop'
 
         output_dir = self.output_dir.get().strip()
-        self.log_message(f'[DEBUG] output_dir={output_dir!r}')
+        self.log_message(self.translate_concat('[DEBUG] output_dir=', f'{output_dir!r}'))
 
         playlist_parsed_url = getattr(self, 'playlist_parsed_url', None)
-        self.log_message(f'[DEBUG] URL match check: Input="{url}", Parsed="{playlist_parsed_url}"')
+        msg = self.tr('[DEBUG] URL match check: Input=') + f'"{url}"' + self.tr(', Parsed=') + f'"{playlist_parsed_url}"'
+        self.log_message(msg)
 
         tasks = []
         # ONLY use playlist tasks if the URL matches what we parsed!
