@@ -653,11 +653,20 @@ class YtDlpGUI:
         button_frame = ttk.Frame(top_frame)
         # Move up since the intermediate batch row was removed
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
-        # 使用 tk.Button 替代 ttk.Button 以支持自定义背景颜色（特别是 macOS）
-        self.download_btn = tk.Button(button_frame, text='Download', command=self.on_download_btn_click, 
-                                     width=15, bg='#28a745', fg='white', activebackground='#218838', 
-                                     activeforeground='white', relief=tk.FLAT)
-        self.download_btn.pack(side=tk.LEFT, padx=5)
+        # 在 macOS 上，使用 tk.Label 模拟按钮是实现纯色背景最可靠的方法
+        self.download_btn = tk.Label(button_frame, text='Download', 
+                                    bg='#28a745', fg='white', 
+                                    width=15, height=1,
+                                    relief=tk.RAISED, cursor='hand2')
+        self.download_btn.pack(side=tk.LEFT, padx=5, ipady=3) # 增加内边距让它更高一点
+        
+        # 绑定点击事件
+        self.download_btn.bind('<Button-1>', lambda e: self.on_download_btn_click())
+        
+        # 模拟点击时的视觉反馈
+        self.download_btn.bind('<ButtonPress-1>', lambda e: self.download_btn.config(relief=tk.SUNKEN))
+        self.download_btn.bind('<ButtonRelease-1>', lambda e: self.download_btn.config(relief=tk.RAISED))
+        
         self.register_translatable_widget(self.download_btn, 'Download')
 
         btn_open_folder = ttk.Button(button_frame, text='Open Output Folder', command=self.open_output_folder, width=15)
