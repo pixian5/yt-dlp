@@ -3221,7 +3221,11 @@ class YtDlpGUI:
 
     def _restore_download_button(self):
         if hasattr(self, 'download_btn'):
-            self.download_btn.config(text=self.tr('Download'))
+            # 恢复为绿色
+            def _restore():
+                self.download_btn.config(text=self.tr('Download'), background='#28a745', bg='#28a745')
+                self.download_btn.update()
+            self.root.after(10, _restore)
             self._translatable_widgets[self.download_btn] = 'Download'
 
     def _handle_label_press(self, event):
@@ -3306,8 +3310,11 @@ class YtDlpGUI:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
-        # Change button to Stop
-        self.download_btn.config(text=self.tr('Stop'))
+        # Change button to Stop - 变为红色
+        def _to_stop():
+            self.download_btn.config(text=self.tr('Stop'), background='#dc3545', bg='#dc3545')
+            self.download_btn.update()
+        self.root.after(10, _to_stop)
         self._translatable_widgets[self.download_btn] = 'Stop'
 
         output_dir = self.output_dir.get().strip()
