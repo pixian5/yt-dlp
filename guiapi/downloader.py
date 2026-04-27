@@ -762,7 +762,8 @@ class DownloaderMixin:
 
     def _restore_download_button(self):
         if hasattr(self, 'download_btn'):
-            self.download_btn.config(text=self.tr('Download'))
+            # 恢复为绿色
+            self.download_btn.config(text=self.tr('Download'), bg='#28a745')
             self._translatable_widgets[self.download_btn] = 'Download'
 
     def on_download_btn_click(self):
@@ -839,8 +840,8 @@ class DownloaderMixin:
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
-        # Change button to Stop
-        self.download_btn.config(text=self.tr('Stop'))
+        # Change button to Stop - 变为红色
+        self.download_btn.config(text=self.tr('Stop'), bg='#dc3545')
         self._translatable_widgets[self.download_btn] = 'Stop'
 
         output_dir = self.output_dir.get().strip()
