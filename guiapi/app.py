@@ -653,7 +653,10 @@ class YtDlpGUI:
         button_frame = ttk.Frame(top_frame)
         # Move up since the intermediate batch row was removed
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
-        self.download_btn = ttk.Button(button_frame, text='Download', command=self.on_download_btn_click, width=15)
+        # 使用 tk.Button 替代 ttk.Button 以支持自定义背景颜色（特别是 macOS）
+        self.download_btn = tk.Button(button_frame, text='Download', command=self.on_download_btn_click, 
+                                     width=15, bg='#28a745', fg='white', activebackground='#218838', 
+                                     activeforeground='white', relief=tk.FLAT)
         self.download_btn.pack(side=tk.LEFT, padx=5)
         self.register_translatable_widget(self.download_btn, 'Download')
 
