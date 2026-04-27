@@ -849,6 +849,7 @@ class YtDlpGUI:
         self.bulk_rows = [r for r in self.bulk_rows if r['frame'] != frame]
         if not self.bulk_rows:
             self.add_bulk_row()
+        self.trigger_autosave()
 
     def remove_batch_row(self, frame):
         """Compatibility alias for previous function name."""
@@ -874,6 +875,7 @@ class YtDlpGUI:
         for url in reversed(urls):
             self.add_bulk_row_at_index(0, url)
         self.log_message(f'Pasted {len(urls)} URL(s) to top')
+        self.trigger_autosave()
 
     def paste_bulk_to_bottom(self):
         """Paste URLs from clipboard to the bottom of bulk rows."""
@@ -884,6 +886,7 @@ class YtDlpGUI:
         for url in urls:
             self.add_bulk_row(url)
         self.log_message(f'Pasted {len(urls)} URL(s) to bottom')
+        self.trigger_autosave()
 
     def parse_all_bulk_urls(self):
         """Parse all URLs in bulk rows."""
@@ -923,6 +926,7 @@ class YtDlpGUI:
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
             self.bulk_rows[0]['var'].set('')
+        self.trigger_autosave()
 
     def _restore_bulk_rows(self, urls):
         """Restore bulk_rows from saved URLs."""
