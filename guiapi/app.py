@@ -660,12 +660,9 @@ class YtDlpGUI:
                                     relief=tk.RAISED, cursor='hand2')
         self.download_btn.pack(side=tk.LEFT, padx=5, ipady=3) # 增加内边距让它更高一点
         
-        # 绑定点击事件
-        self.download_btn.bind('<Button-1>', lambda e: self.on_download_btn_click())
-        
-        # 模拟点击时的视觉反馈
-        self.download_btn.bind('<ButtonPress-1>', lambda e: self.download_btn.config(relief=tk.SUNKEN))
-        self.download_btn.bind('<ButtonRelease-1>', lambda e: self.download_btn.config(relief=tk.RAISED))
+        # 绑定点击事件：在松开鼠标时触发下载
+        self.download_btn.bind('<ButtonRelease-1>', lambda e: self._handle_label_release(e))
+        self.download_btn.bind('<ButtonPress-1>', lambda e: self._handle_label_press(e))
         
         self.register_translatable_widget(self.download_btn, 'Download')
 
@@ -3227,7 +3224,15 @@ class YtDlpGUI:
             self.download_btn.config(text=self.tr('Download'))
             self._translatable_widgets[self.download_btn] = 'Download'
 
+    def _handle_label_press(self, event):
+        self.download_btn.config(relief=tk.SUNKEN)
+
+    def _handle_label_release(self, event):
+        self.download_btn.config(relief=tk.RAISED)
+        self.on_download_btn_click()
+
     def on_download_btn_click(self):
+        self.log_message("[DEBUG] Download button clicked.")
         if hasattr(self, 'current_process') and self.current_process:
             self.stop_download()
         else:
