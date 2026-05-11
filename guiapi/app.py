@@ -2840,9 +2840,10 @@ class YtDlpGUI:
         # Filesystem options
         output_template = self.output_template.get()
         output_dir = self.output_dir.get()
-        if output_template and self.playlist_subdir.get() and '%(playlist)s/' not in output_template and '%(playlist)s\\' not in output_template:
+        if output_template and self.playlist_subdir.get() and '%(playlist)s/' not in output_template and '%(playlist)s\\' not in output_template and '%(playlist&' not in output_template:
             # Avoid duplicating the playlist folder if the user already encoded it in the template path.
-            output_template = os.path.join('%(playlist)s', output_template)
+            # Use yt-dlp conditional syntax: %(playlist&{}/|)s creates folder ONLY if playlist exists
+            output_template = f'%(playlist&{{}}/|)s{output_template}'
         if output_dir and output_template:
             args.extend(['-o', os.path.join(output_dir, output_template)])
         elif output_template:
