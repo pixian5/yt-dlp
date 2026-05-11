@@ -3178,6 +3178,17 @@ class YtDlpGUI:
                 self.log_message(f'[{i + 1}/{total}] ' + self.tr('Download Task: Index ') + f'{idx}')
                 self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
+                if idx != 'Single':
+                    def highlight_row(v_idx):
+                        if hasattr(self, 'playlist_tree'):
+                            for child in self.playlist_tree.get_children():
+                                vals = self.playlist_tree.item(child, 'values')
+                                if vals and str(vals[1]) == str(v_idx):
+                                    self.playlist_tree.selection_set(child)
+                                    self.playlist_tree.see(child)
+                                    break
+                    self.root.after(0, highlight_row, idx)
+
                 full_cmd = [sys.executable, '-m', 'yt_dlp', '--remote-components', 'ejs:github', *args]
                 self.log_message(self.tr('[DEBUG] 执行命令: ') + ' '.join(full_cmd))
                 env = os.environ.copy()
@@ -3224,6 +3235,7 @@ class YtDlpGUI:
         finally:
             self.current_process = None
             self.root.after(0, self._restore_download_button)
+            self.root.after(0, lambda: self.root.title(self.tr(self.base_title)))
 
     def _restore_download_button(self):
         if hasattr(self, 'download_btn'):
@@ -3569,6 +3581,13 @@ class YtDlpGUI:
     def _log_message_internal(self, message):
         """Internal method to update the console text widget and redirect progress to status bar"""
         clean_msg = message.strip()
+
+        if clean_msg.startswith('[download] Destination:'):
+            filename = clean_msg.split(':', 1)[1].strip()
+            self.root.title(f"{self.tr(self.base_title)} - {os.path.basename(filename)}")
+        elif 'has already been downloaded' in clean_msg and clean_msg.startswith('[download]'):
+            filename = clean_msg.replace('[download]', '').split('has already been downloaded')[0].strip()
+            self.root.title(f"{self.tr(self.base_title)} - {os.path.basename(filename)}")
 
         # Redirect [download] progress to the status bar instead of the console
         # Typically looks like: [download]  1.2% of 10.00MiB at ...
