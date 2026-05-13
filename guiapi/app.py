@@ -478,9 +478,16 @@ class YtDlpGUI:
 
         # Save bulk_rows URLs before destroying
         if hasattr(self, 'bulk_rows'):
-            bulk_urls = [row['var'].get().strip() for row in self.bulk_rows if row['var'].get().strip()]
+            bulk_urls = []
+            bulk_playlists = []
+            for row in self.bulk_rows:
+                url = row['var'].get().strip()
+                if url:
+                    bulk_urls.append(url)
+                    bulk_playlists.append(row.get('playlist_var').get().strip() if 'playlist_var' in row else '')
             if bulk_urls:
                 self._pending_gui_state['bulk_urls'] = bulk_urls
+                self._pending_gui_state['bulk_playlists'] = bulk_playlists
 
         for child in frame.winfo_children():
             child.destroy()
@@ -568,8 +575,9 @@ class YtDlpGUI:
         # Restore bulk_urls synchronously, but ONLY if the Batch tab has been built
         if hasattr(self, 'batch_tab_frame') and self.batch_tab_frame in self._built_tabs:
             bulk_urls = self._pending_gui_state.pop('bulk_urls', None)
+            bulk_playlists = self._pending_gui_state.pop('bulk_playlists', None)
             if bulk_urls:
-                self._restore_bulk_rows(bulk_urls)
+                self._restore_bulk_rows(bulk_urls, bulk_playlists)
 
         for name, value in list(self._pending_gui_state.items()):
             widget = self._stateful_controls.get(name)
@@ -820,13 +828,20 @@ class YtDlpGUI:
 
         return frame
 
-    def add_bulk_row(self, initial_text=''):
+    def add_bulk_row(self, initial_text='', initial_playlist='', auto_parse_playlist=False):
         row = ttk.Frame(self.bulk_scroll_frame)
         row.pack(fill=tk.X, pady=2)
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+
+        playlist_var = tk.StringVar(value=initial_playlist)
+        playlist_var.trace_add('write', self.trigger_autosave)
+        playlist_entry = ttk.Entry(row, textvariable=playlist_var, width=20)
+        playlist_entry.pack(side=tk.LEFT, padx=(0, 5))
+
+        entry.bind('<Return>', lambda e: self._on_bulk_url_return(var.get().strip(), playlist_var) if var.get().strip() else None)
 
         # USE PLAIN ENGLISH FOR REGISTRATION - TRANSLATION HAPPENS IN apply_localization
         btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
@@ -839,7 +854,10 @@ class YtDlpGUI:
         else:
             btn_remove = ttk.Button(row, text='-', width=3, command=lambda r=row: self.remove_bulk_row(r))
             btn_remove.pack(side=tk.LEFT)
-        self.bulk_rows.append({'frame': row, 'var': var})
+        self.bulk_rows.append({'frame': row, 'var': var, 'playlist_var': playlist_var})
+
+        if auto_parse_playlist and initial_text.strip():
+            self._fetch_playlist_title_async(initial_text.strip(), playlist_var)
 
         # Immediate sync for this newly added row
         self.localize_widget_tree(row)
@@ -873,7 +891,7 @@ class YtDlpGUI:
             return
         # Insert at beginning
         for url in reversed(urls):
-            self.add_bulk_row_at_index(0, url)
+            self.add_bulk_row_at_index(0, url, auto_parse_playlist=True)
         self.log_message(f'Pasted {len(urls)} URL(s) to top')
         self.trigger_autosave()
 
@@ -884,7 +902,7 @@ class YtDlpGUI:
             self.log_message('No HTTP URLs found in clipboard')
             return
         for url in urls:
-            self.add_bulk_row(url)
+            self.add_bulk_row(url, auto_parse_playlist=True)
         self.log_message(f'Pasted {len(urls)} URL(s) to bottom')
         self.trigger_autosave()
 
@@ -895,13 +913,20 @@ class YtDlpGUI:
             if url:
                 self._parse_single_row_url(url)
 
-    def add_bulk_row_at_index(self, index, initial_text=''):
+    def add_bulk_row_at_index(self, index, initial_text='', initial_playlist='', auto_parse_playlist=False):
         """Add a bulk row at specific index position."""
         row = ttk.Frame(self.bulk_scroll_frame)
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+
+        playlist_var = tk.StringVar(value=initial_playlist)
+        playlist_var.trace_add('write', self.trigger_autosave)
+        playlist_entry = ttk.Entry(row, textvariable=playlist_var, width=20)
+        playlist_entry.pack(side=tk.LEFT, padx=(0, 5))
+
+        entry.bind('<Return>', lambda e: self._on_bulk_url_return(var.get().strip(), playlist_var) if var.get().strip() else None)
 
         btn_parse = ttk.Button(row, text=self.tr('Parse'), width=8, command=lambda v=var: self._parse_single_row_url(v.get()))
         btn_parse.pack(side=tk.LEFT, padx=2)
@@ -911,8 +936,11 @@ class YtDlpGUI:
         btn_remove.pack(side=tk.LEFT)
 
         # Insert into list at index
-        self.bulk_rows.insert(index, {'frame': row, 'var': var})
+        self.bulk_rows.insert(index, {'frame': row, 'var': var, 'playlist_var': playlist_var})
         self.localize_widget_tree(row)
+
+        if auto_parse_playlist and initial_text.strip():
+            self._fetch_playlist_title_async(initial_text.strip(), playlist_var)
 
         # Re-pack all rows in order
         for r in self.bulk_rows:
@@ -926,20 +954,51 @@ class YtDlpGUI:
         if self.bulk_rows:
             self.bulk_rows = self.bulk_rows[:1]
             self.bulk_rows[0]['var'].set('')
+            if 'playlist_var' in self.bulk_rows[0]:
+                self.bulk_rows[0]['playlist_var'].set('')
         self.trigger_autosave()
 
-    def _restore_bulk_rows(self, urls):
+    def _restore_bulk_rows(self, urls, playlists=None):
         """Restore bulk_rows from saved URLs."""
         if not urls:
             return
+        if playlists is None:
+            playlists = []
         # Clear existing rows first
         for row in self.bulk_rows[1:]:
             row['frame'].destroy()
         if self.bulk_rows:
             self.bulk_rows[0]['var'].set(urls[0] if urls else '')
+            if 'playlist_var' in self.bulk_rows[0]:
+                self.bulk_rows[0]['playlist_var'].set(playlists[0] if playlists else '')
             urls = urls[1:]
-        for url in urls:
-            self.add_bulk_row(url)
+            playlists = playlists[1:] if playlists else []
+        for i, url in enumerate(urls):
+            pl = playlists[i] if i < len(playlists) else ''
+            self.add_bulk_row(url, initial_playlist=pl)
+
+    def _on_bulk_url_return(self, url, title_var):
+        if url:
+            self._fetch_playlist_title_async(url, title_var)
+
+    def _fetch_playlist_title_async(self, url, title_var):
+        def worker():
+            try:
+                cmd = [sys.executable, '-m', 'yt_dlp', '--flat-playlist', '--dump-single-json', url]
+                if hasattr(self, 'cookies_from_browser') and self.cookies_from_browser.get():
+                    cmd.extend(['--cookies-from-browser', self.cookies_from_browser.get()])
+                if hasattr(self, 'cookies') and self.cookies.get():
+                    cmd.extend(['--cookies', self.cookies.get()])
+
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=15)
+                if result.stdout:
+                    info = json.loads(result.stdout)
+                    title = info.get('title')
+                    if title:
+                        self.root.after(0, lambda: title_var.set(title))
+            except Exception:
+                pass
+        threading.Thread(target=worker, daemon=True).start()
 
     def _parse_single_row_url(self, url):
         url = (url or '').strip()
@@ -3682,10 +3741,19 @@ class YtDlpGUI:
         # Save bulk_rows URLs
         if 'bulk_urls' in self._pending_gui_state:
             gui_state['bulk_urls'] = self._pending_gui_state['bulk_urls']
+            if 'bulk_playlists' in self._pending_gui_state:
+                gui_state['bulk_playlists'] = self._pending_gui_state['bulk_playlists']
         else:
             bulk_list = getattr(self, 'bulk_rows', [])
-            bulk_urls = [row['var'].get().strip() for row in bulk_list if row['var'].get().strip()]
+            bulk_urls = []
+            bulk_playlists = []
+            for row in bulk_list:
+                url = row['var'].get().strip()
+                if url:
+                    bulk_urls.append(url)
+                    bulk_playlists.append(row.get('playlist_var').get().strip() if 'playlist_var' in row else '')
             gui_state['bulk_urls'] = bulk_urls
+            gui_state['bulk_playlists'] = bulk_playlists
 
         return {
             'config_version': 1,
