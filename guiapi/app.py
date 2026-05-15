@@ -628,9 +628,9 @@ class YtDlpGUI:
         url_btn_frame = ttk.Frame(top_frame)
         url_btn_frame.grid(row=0, column=0, sticky=tk.W, pady=5)
 
-        self.paste_url_btn = ttk.Button(url_btn_frame, text='Paste Link:', command=self.paste_url_from_clipboard)
+        self.paste_url_btn = ttk.Button(url_btn_frame, text='Paste and Parse Link:', command=self.paste_url_from_clipboard)
         self.paste_url_btn.pack(side=tk.LEFT)
-        self.register_translatable_widget(self.paste_url_btn, 'Paste Link:')
+        self.register_translatable_widget(self.paste_url_btn, 'Paste and Parse Link:')
 
         self.playlist_btn = ttk.Button(url_btn_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
         self.playlist_btn.pack(side=tk.LEFT, padx=(5, 0))
@@ -2561,6 +2561,9 @@ class YtDlpGUI:
         self.url_entry.insert(0, clipboard_text)
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
+        
+        # Trigger parsing automatically
+        self.parse_playlist()
 
     def paste_playlist_from_clipboard(self):
         try:
