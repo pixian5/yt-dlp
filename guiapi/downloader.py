@@ -389,9 +389,10 @@ class DownloaderMixin:
         # Filesystem options
         output_template = self.output_template.get()
         output_dir = self.output_dir.get()
-        if output_template and self.playlist_subdir.get() and '%(playlist)s/' not in output_template and '%(playlist)s\\' not in output_template:
-            # Avoid duplicating the playlist folder if the user already encoded it in the template path.
-            output_template = os.path.join('%(playlist)s', output_template)
+        if output_template and self.playlist_subdir.get() and '%(playlist' not in output_template:
+            # Use conditional template: creates subfolder only when playlist field is truthy (actual playlists).
+            # Single videos have playlist=None, so no subfolder is created for them.
+            output_template = '%(playlist&{}/|)s' + output_template
         if output_dir and output_template:
             args.extend(['-o', os.path.join(output_dir, output_template)])
         elif output_template:
@@ -895,14 +896,17 @@ class DownloaderMixin:
                     # Remove unsafe characters
                     filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
 
-                    # Handle playlist subfolder
+                    # Handle playlist subfolder (only for actual playlists, not single videos)
                     final_output_dir = output_dir
                     if self.playlist_subdir.get() and getattr(self, 'current_playlist_metadata_title', None):
-                        folder_name = ''.join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
-                        if folder_name:
-                            final_output_dir = os.path.join(output_dir, folder_name)
-                            if not os.path.exists(final_output_dir):
-                                os.makedirs(final_output_dir, exist_ok=True)
+                        # Skip subfolder for single videos (playlist with only 1 entry)
+                        entry_count = len(getattr(self, 'playlist_entries_data', []) or [])
+                        if entry_count > 1:
+                            folder_name = ''.join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
+                            if folder_name:
+                                final_output_dir = os.path.join(output_dir, folder_name)
+                                if not os.path.exists(final_output_dir):
+                                    os.makedirs(final_output_dir, exist_ok=True)
 
                     out_path = os.path.join(final_output_dir, filename_tpl) if final_output_dir else filename_tpl
                     task_args.extend(['--playlist-items', str(original_idx)])

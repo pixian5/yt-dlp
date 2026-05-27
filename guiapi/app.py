@@ -263,6 +263,30 @@ class YtDlpGUI:
         for child in widget.winfo_children():
             self.localize_widget_tree(child)
 
+    def translate_yt_dlp_line(self, line):
+        """Translate common yt-dlp output lines."""
+        if 'Extracting cookies from ' in line:
+            return line.replace('Extracting cookies from ', self.tr('Extracting cookies from '))
+        if 'Extracted ' in line and ' cookies from ' in line:
+            return line.replace('Extracted ', self.tr('Extracted ')).replace(' cookies from ', self.tr(' cookies from '))
+        if '[download] Downloading playlist: ' in line:
+            return line.replace('[download] Downloading playlist: ', self.tr('[download] Downloading playlist: '))
+        if '[download] Finished downloading playlist: ' in line:
+            return line.replace('[download] Finished downloading playlist: ', self.tr('[download] Finished downloading playlist: '))
+        if '[download] Downloading item ' in line and ' of ' in line:
+            return line.replace('[download] Downloading item ', self.tr('[download] Downloading item ')).replace(' of ', self.tr(' of '))
+        if '[download] Destination: ' in line:
+            return line.replace('[download] Destination: ', self.tr('[download] Destination: '))
+        if '[Merger] Merging formats into ' in line:
+            return line.replace('[Merger] Merging formats into ', self.tr('[Merger] Merging formats into '))
+        if 'Deleting original file ' in line:
+            return line.replace('Deleting original file ', self.tr('Deleting original file '))
+        if ': Downloading webpage' in line:
+            return line.replace(': Downloading webpage', self.tr(': Downloading webpage'))
+        if '[info] Writing video subtitles to: ' in line:
+            return line.replace('[info] Writing video subtitles to: ', self.tr('[info] Writing video subtitles to: '))
+        return line
+
     def localize_notebook_tabs(self):
         if not hasattr(self, 'notebook'):
             return
@@ -887,23 +911,23 @@ class YtDlpGUI:
         """Paste URLs from clipboard to the top of bulk rows."""
         urls = self._extract_urls_from_clipboard()
         if not urls:
-            self.log_message('No HTTP URLs found in clipboard')
+            self.log_message(self.tr('No HTTP URLs found in clipboard'))
             return
         # Insert at beginning
         for url in reversed(urls):
             self.add_bulk_row_at_index(0, url, auto_parse_playlist=True)
-        self.log_message(f'Pasted {len(urls)} URL(s) to top')
+        self.log_message(self.translate_concat('Pasted ', f'{len(urls)}') + self.tr(' URL(s) to top'))
         self.trigger_autosave()
 
     def paste_bulk_to_bottom(self):
         """Paste URLs from clipboard to the bottom of bulk rows."""
         urls = self._extract_urls_from_clipboard()
         if not urls:
-            self.log_message('No HTTP URLs found in clipboard')
+            self.log_message(self.tr('No HTTP URLs found in clipboard'))
             return
         for url in urls:
             self.add_bulk_row(url, auto_parse_playlist=True)
-        self.log_message(f'Pasted {len(urls)} URL(s) to bottom')
+        self.log_message(self.translate_concat('Pasted ', f'{len(urls)}') + self.tr(' URL(s) to bottom'))
         self.trigger_autosave()
 
     def parse_all_bulk_urls(self):
@@ -1042,14 +1066,14 @@ class YtDlpGUI:
                 normalized.append(url)
 
         if not normalized:
-            self.log_message('No valid batch URLs found.')
+            self.log_message(self.tr('No valid batch URLs found.'))
             self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
             return
 
         content = '\n'.join(normalized)
         self.root.after(0, lambda: self.batch_file_entry.delete(0, tk.END))
         self.root.after(0, lambda: self.batch_file_entry.insert(0, content))
-        self.log_message(f'Batch parsed: {len(normalized)} URL(s) ready.')
+        self.log_message(self.translate_concat('Batch parsed: ', f'{len(normalized)}') + self.tr(' URL(s) ready.'))
         self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
 
     def create_playlist_tab(self, frame=None):
@@ -3194,7 +3218,7 @@ class YtDlpGUI:
                         atexit.register(self._cleanup_temp_files)
                     self._temp_batch_files.append(temp_path)
                 except Exception as e:
-                    self.log_message(f'Error creating temporary batch file: {e}')
+                    self.log_message(self.translate_concat('Error creating temporary batch file: ', str(e)))
                     args.extend(['-a', batch_file])  # Fallback
             else:
                 args.extend(['-a', batch_file])
@@ -3273,15 +3297,15 @@ class YtDlpGUI:
                 if process.stdout:
                     for line in process.stdout:
                         if line:
-                            self.log_message(line.rstrip())
+                            self.log_message(self.translate_yt_dlp_line(line.rstrip()))
 
                 process.wait()
 
                 if process.returncode != 0 and process.returncode not in (15, -15):
                     self.log_message(self.translate_concat('Task failed with code ', process.returncode))
                     if 'n challenge solving failed' in ''.join(self.console.get('1.0', tk.END)):
-                        self.log_message('\n[!] 提示：检测到 JavaScript 运行环境缺失。')
-                        self.log_message("[!] 请在终端运行 'brew install node' 以修复此下载报错。")
+                        self.log_message(self.tr('\n[!] Warning: Missing JavaScript runtime environment.'))
+                        self.log_message(self.tr("[!] Please run 'brew install node' in the terminal to fix this download error."))
                     # We continue even if one fails
 
                 if not hasattr(self, 'current_process') or self.current_process is None:
@@ -3337,7 +3361,7 @@ class YtDlpGUI:
                     p.terminate()
                     p.kill()
             except Exception as e:
-                self.log_message(f'[DEBUG] Stop error: {e}')
+                self.log_message(self.translate_concat('[DEBUG] Stop error: ', str(e)))
 
             # Popup for cleanup
             msg = self.tr('Download stopped. Would you like to delete partially downloaded files?')
@@ -3365,7 +3389,7 @@ class YtDlpGUI:
                             os.remove(file_path)
                             count += 1
                         except Exception as e:
-                            self.log_message(f'Failed to remove {filename}: {e}')
+                            self.log_message(self.translate_concat('Failed to remove ', f'{filename}: {e}'))
             self.log_message(self.tr('Cleanup finished. Removed ') + f'{count}' + self.tr(' files.'))
         except Exception as e:
             self.log_message(self.tr('Error during cleanup: ') + str(e))
@@ -3380,13 +3404,13 @@ class YtDlpGUI:
             self.log_message(self.translate_concat('[DEBUG] base_args count=', len(base_args) if base_args else 0))
         except Exception as e:
             import traceback
-            self.log_message(f'[DEBUG] build_command_args CRASHED: {e}')
+            self.log_message(self.translate_concat('[DEBUG] build_command_args CRASHED: ', str(e)))
             self.log_message(traceback.format_exc())
             self._restore_download_button()
             return
 
         if not base_args or (not url and not self.batch_file_entry.get().strip()):
-            self.log_message('[DEBUG] No URL or args — showing warning')
+            self.log_message(self.tr('[DEBUG] No URL or args — showing warning'))
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
 
@@ -3499,7 +3523,7 @@ class YtDlpGUI:
             gui_lang_code = getattr(self, 'current_language', 'zh')
             lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
 
-            self.log_message(f'[DEBUG] Parsing playlist metadata using interface-linked language: {lang_to_use}')
+            self.log_message(self.translate_concat('[DEBUG] Parsing playlist metadata using interface-linked language: ', lang_to_use))
             cmd.extend(['--add-header', f'Accept-Language:{lang_to_use},zh-CN;q=0.9,zh;q=0.8'])
             cmd.extend(['--geo-bypass'])
 
