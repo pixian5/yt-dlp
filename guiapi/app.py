@@ -3541,6 +3541,14 @@ class YtDlpGUI:
             if self.add_header.get():
                 cmd.extend(['--add-header', self.add_header.get()])
 
+            user_extractor_args = self.extractor_args.get().strip() if hasattr(self, 'extractor_args') else ''
+            if user_extractor_args:
+                cmd.extend(['--extractor-args', user_extractor_args])
+
+            normalized_extractor_args = user_extractor_args.lower().replace(' ', '')
+            if 'youtubetab:' not in normalized_extractor_args:
+                cmd.extend(['--extractor-args', 'youtubetab:skip=authcheck'])
+
             cmd.append(url)
 
             # 设置环境变量，确保能找到 deno
