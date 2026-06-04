@@ -2801,10 +2801,12 @@ class YtDlpGUI:
         }
         gui_lang_code = getattr(self, 'current_language', 'zh')
         lang_to_use = lang_map.get(gui_lang_code, 'zh-CN')
+        metadata_lang_extractor_arg_added = False
 
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
             lang_to_use = self.metadata_lang.get().split('(')[-1].split(')')[0]
             args.extend(['--extractor-args', f'youtube:lang={lang_to_use}'])
+            metadata_lang_extractor_arg_added = True
 
         args.extend(['--add-header', f'Accept-Language:{lang_to_use},zh;q=0.9,en-US;q=0.8,en;q=0.7'])
 
@@ -3188,13 +3190,18 @@ class YtDlpGUI:
         extractor_args = []
         if hasattr(self, 'metadata_lang') and self.metadata_lang.get() and self.metadata_lang.get() != self.tr('Default (Auto)'):
             lang_code = self.metadata_lang.get().split('(')[-1].split(')')[0] if '(' in self.metadata_lang.get() else self.metadata_lang.get()
-            if not url.startswith('https://www.youtube.com/playlist'):
+            if not metadata_lang_extractor_arg_added and not url.startswith('https://www.youtube.com/playlist'):
                 extractor_args.append(f'youtube:lang={lang_code}')
-        if self.extractor_args.get():
-            extractor_args.append(self.extractor_args.get())
+        user_extractor_args = self.extractor_args.get().strip()
+        if user_extractor_args:
+            extractor_args.append(user_extractor_args)
 
-        if extractor_args:
-            args.extend(['--extractor-args', '; '.join(extractor_args)])
+        normalized_extractor_args = user_extractor_args.lower().replace(' ', '')
+        if 'youtubetab:' not in normalized_extractor_args:
+            extractor_args.append('youtubetab:skip=authcheck')
+
+        for extractor_arg in extractor_args:
+            args.extend(['--extractor-args', extractor_arg])
 
         if self.extractor_retries.get():
             args.extend(['--extractor-retries', self.extractor_retries.get()])
