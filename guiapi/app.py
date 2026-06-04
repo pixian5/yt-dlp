@@ -3573,7 +3573,11 @@ class YtDlpGUI:
             self.log_message(self.tr('Checking if URL is a playlist...'))
             # ADDED --no-cache-dir to ensure we get fresh language-specific metadata
             # ADDED --remote-components for JS challenge solving (deno)
-            cmd = [sys.executable, '-m', 'yt_dlp', '-J', '--flat-playlist', '--no-cache-dir', '--remote-components', 'ejs:github']
+            cmd = [
+                sys.executable, '-m', 'yt_dlp',
+                '-J', '--flat-playlist', '--no-cache-dir', '--ignore-no-formats-error',
+                '--remote-components', 'ejs:github',
+            ]
 
             # MAP GUI Language to Metadata Language
             lang_map = {'zh': 'zh-CN', 'en': 'en', 'ru': 'ru', 'ja': 'ja', 'ko': 'ko', 'es': 'es', 'fr': 'fr', 'de': 'de'}
