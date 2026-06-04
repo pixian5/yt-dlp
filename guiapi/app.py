@@ -57,6 +57,7 @@ class YtDlpGUI:
         self.exclude_private = tk.BooleanVar(value=True)
         self.batch_urls_text = None
         self.bulk_rows = []
+        self.playlist_parse_is_real_playlist = False
 
         # Language selection variable with trace
         self.language_var = tk.StringVar()
@@ -625,6 +626,7 @@ class YtDlpGUI:
         current_url = self.url_var.get().strip()
         if getattr(self, 'playlist_parsed_url', None) and current_url != self.playlist_parsed_url:
             self.playlist_parsed_url = None
+            self.playlist_parse_is_real_playlist = False
             if hasattr(self, 'playlist_tree'):
                 self.playlist_tree.delete(*self.playlist_tree.get_children())
             self.status_var.set(self.tr('Ready'))
@@ -3466,7 +3468,9 @@ class YtDlpGUI:
 
                     # Handle playlist subfolder
                     final_output_dir = output_dir
-                    if self.playlist_subdir.get() and getattr(self, 'current_playlist_metadata_title', None):
+                    if (self.playlist_subdir.get()
+                            and getattr(self, 'playlist_parse_is_real_playlist', False)
+                            and getattr(self, 'current_playlist_metadata_title', None)):
                         folder_name = ''.join([c for c in self.current_playlist_metadata_title if c not in '<>:"/\\|?*']).strip()
                         if folder_name:
                             final_output_dir = os.path.join(output_dir, folder_name)
@@ -3569,6 +3573,7 @@ class YtDlpGUI:
                 # Handle both playlists and single videos
                 if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
                     self.playlist_parsed_url = url
+                    self.playlist_parse_is_real_playlist = True
                     self.playlist_entries_data = info['entries']
                     self.current_playlist_metadata_title = info.get('title', 'Playlist')
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
@@ -3576,6 +3581,7 @@ class YtDlpGUI:
                 elif info.get('_type') == 'video' or (info.get('_type') == 'url' and info.get('ie_key') == 'Youtube'):
                     # Single video detected - treat it as a playlist with one entry
                     self.playlist_parsed_url = url
+                    self.playlist_parse_is_real_playlist = False
                     video_info = {
                         '_type': 'video',
                         'id': info.get('id', ''),
