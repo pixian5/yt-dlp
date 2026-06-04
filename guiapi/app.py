@@ -58,6 +58,7 @@ class YtDlpGUI:
         self.batch_urls_text = None
         self.bulk_rows = []
         self.playlist_parse_is_real_playlist = False
+        self.download_after_playlist_parse = False
 
         # Language selection variable with trace
         self.language_var = tk.StringVar()
@@ -661,6 +662,11 @@ class YtDlpGUI:
         self.playlist_btn = ttk.Button(url_btn_frame, text='Parse Playlist', command=self.parse_playlist, width=15)
         self.playlist_btn.pack(side=tk.LEFT, padx=(5, 0))
         self.register_translatable_widget(self.playlist_btn, 'Parse Playlist')
+
+        self.paste_parse_download_btn = ttk.Button(
+            url_btn_frame, text='Paste Parse Download', command=self.paste_parse_download_from_clipboard, width=18)
+        self.paste_parse_download_btn.pack(side=tk.LEFT, padx=(5, 0))
+        self.register_translatable_widget(self.paste_parse_download_btn, 'Paste Parse Download')
 
         self.url_var = tk.StringVar()
         self.url_var.trace_add('write', self.on_url_changed)
@@ -2574,6 +2580,20 @@ class YtDlpGUI:
                 self.batch_file_var.set(filename)
 
     def paste_url_from_clipboard(self):
+        if not self._paste_clipboard_to_url_entry():
+            return
+
+        # Trigger parsing automatically
+        self.parse_playlist()
+
+    def paste_parse_download_from_clipboard(self):
+        if not self._paste_clipboard_to_url_entry():
+            return
+
+        self.download_after_playlist_parse = True
+        self.parse_playlist()
+
+    def _paste_clipboard_to_url_entry(self):
         try:
             clipboard_text = self.root.clipboard_get().strip()
         except tk.TclError:
@@ -2587,9 +2607,7 @@ class YtDlpGUI:
         self.url_entry.insert(0, clipboard_text)
         self.url_entry.focus_set()
         self.log_message(self.tr('Pasted link from clipboard.'))
-        
-        # Trigger parsing automatically
-        self.parse_playlist()
+        return True
 
     def paste_playlist_from_clipboard(self):
         try:
@@ -3504,6 +3522,7 @@ class YtDlpGUI:
             self.url_entry.insert(0, url)
 
         if not url:
+            self.download_after_playlist_parse = False
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL.'))
             return
 
@@ -3598,8 +3617,10 @@ class YtDlpGUI:
             else:
                 self.log_message(f'[ERROR] Parsing failed: {stderr.strip()}')
                 self.log_message(self.tr('Failed to parse playlist.'))
+                self.download_after_playlist_parse = False
         except Exception as e:
             self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
+            self.download_after_playlist_parse = False
         self.status_var.set(self.tr('Ready'))
 
     def _show_playlist_tab(self, temp_title):
@@ -3639,6 +3660,10 @@ class YtDlpGUI:
             self.playlist_tree.heading('status', text=' ')
             self.playlist_tree.heading('index', text='#')
             self.playlist_tree.heading('title', text=self.tr('Title'))
+
+            if getattr(self, 'download_after_playlist_parse', False):
+                self.download_after_playlist_parse = False
+                self.root.after(100, self.start_download)
 
     def list_formats(self):
         """List available formats for the video"""
