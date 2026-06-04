@@ -3373,6 +3373,27 @@ class YtDlpGUI:
         else:
             self.start_download()
 
+    def _get_playlist_entry_download_url(self, original_idx, fallback_url):
+        entries = getattr(self, 'playlist_entries_data', None) or []
+        if not (1 <= original_idx <= len(entries)):
+            return None
+
+        entry = entries[original_idx - 1] or {}
+        entry_id = str(entry.get('id') or '').strip()
+        ie_key = str(entry.get('ie_key') or entry.get('extractor_key') or '').lower()
+        fallback_is_youtube = 'youtube.com/' in fallback_url or 'youtu.be/' in fallback_url
+        is_youtube_entry = fallback_is_youtube or ie_key.startswith('youtube')
+
+        if is_youtube_entry and entry_id:
+            return f'https://www.youtube.com/watch?v={entry_id}'
+
+        for key in ('webpage_url', 'url'):
+            entry_url = str(entry.get(key) or '').strip()
+            if entry_url.startswith(('http://', 'https://')):
+                return entry_url
+
+        return None
+
     def stop_download(self):
         if hasattr(self, 'current_process') and self.current_process:
             p = self.current_process
@@ -3477,6 +3498,7 @@ class YtDlpGUI:
                             continue
                         # EXCLUDE batch file and redundant playlist items from individual tasks
                         if arg in ('--playlist-items', '--playlist-reverse', '--no-playlist-reverse',
+                                   '--yes-playlist', '--no-playlist',
                                    '-o', '-P', '--paths', '-a', '--batch-file'):
                             if arg in ('--playlist-items', '-o', '-P', '--paths', '-a', '--batch-file'):
                                 skip = True
@@ -3485,8 +3507,12 @@ class YtDlpGUI:
                             continue
                         task_args.append(arg)
 
-                    # Always use the specific playlist URL for individual tasks
-                    task_args.append(url)
+                    entry_download_url = self._get_playlist_entry_download_url(original_idx, url)
+                    if entry_download_url:
+                        task_args.append('--no-playlist')
+                        task_args.append(entry_download_url)
+                    else:
+                        task_args.append(url)
                     filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
                     # Remove unsafe characters
                     filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
@@ -3503,7 +3529,8 @@ class YtDlpGUI:
                                 os.makedirs(final_output_dir, exist_ok=True)
 
                     out_path = os.path.join(final_output_dir, filename_tpl) if final_output_dir else filename_tpl
-                    task_args.extend(['--playlist-items', str(original_idx)])
+                    if not entry_download_url:
+                        task_args.extend(['--playlist-items', str(original_idx)])
                     task_args.extend(['-o', out_path])
                     tasks.append((visual_idx, task_args))
 
