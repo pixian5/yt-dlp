@@ -15,6 +15,7 @@ import subprocess
 import signal
 import tempfile
 import atexit
+import time
 
 from guiapi.constants import LANGUAGE_OPTIONS, SB_CATEGORIES, GUI_DEFAULT_STATE
 from guiapi.translations import TRANSLATIONS
@@ -49,6 +50,8 @@ class YtDlpGUI:
         # Thread-safe logging initialization
         import queue
         self.log_queue = queue.Queue()
+        self._last_progress_enqueue = 0.0
+        self._last_progress_update = 0.0
         self._start_log_watcher()
 
         # Variables and state tracking
@@ -3879,9 +3882,14 @@ class YtDlpGUI:
         if clean_msg.startswith('[download]') and '%' in clean_msg:
             # Strip '[download]' prefix for a cleaner look as requested
             display_msg = clean_msg.replace('[download]', '').strip()
+            now = time.monotonic()
+            force_update = '100%' in clean_msg
+            if not force_update and now - self._last_progress_update < 0.35:
+                return
+            self._last_progress_update = now
             self.progress_var.set(display_msg)
             # Clear progress bar once finished or moved to next stage
-            if '100%' in clean_msg:
+            if force_update:
                 self.root.after(3000, lambda: self.progress_var.set('') if '100%' in self.progress_var.get() else None)
             return
 
@@ -3896,8 +3904,15 @@ class YtDlpGUI:
     def log_message(self, message):
         """Add message to the thread-safe queue and stdout for debugging."""
         msg_str = str(message)
-        # Always output to terminal for visibility if GUI logs are failing or slow
-        print(msg_str)
+        is_progress = msg_str.startswith('[download]') and '%' in msg_str
+        if is_progress:
+            now = time.monotonic()
+            if '100%' not in msg_str and now - self._last_progress_enqueue < 0.15:
+                return
+            self._last_progress_enqueue = now
+        # Avoid mirroring every high-frequency progress tick to terminal/log files.
+        if not is_progress:
+            print(msg_str)
 
         if hasattr(self, 'log_queue'):
             self.log_queue.put(msg_str)
