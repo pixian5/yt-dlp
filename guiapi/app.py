@@ -486,6 +486,101 @@ class YtDlpGUI:
             return widget.get('1.0', tk.END).rstrip('\n')
         return None
 
+    def get_or_create_boolvar(self, name, default=False):
+        value = getattr(self, name, None)
+        if isinstance(value, tk.BooleanVar):
+            return value
+        value = tk.BooleanVar(value=default)
+        setattr(self, name, value)
+        self.register_stateful_controls({name})
+        return value
+
+    def ensure_named_tab_built(self, key):
+        tab_info = self._tab_builders.get(key)
+        if tab_info:
+            self.ensure_tab_built(tab_info[0])
+
+    def get_control_text(self, name, default=''):
+        widget = getattr(self, name, None)
+        if widget is not None and hasattr(widget, 'get'):
+            try:
+                value = widget.get()
+                return str(value).strip() if value is not None else default
+            except Exception:
+                pass
+        value = self._pending_gui_state.get(name, default)
+        return str(value).strip() if value is not None else default
+
+    def get_batch_file_value(self):
+        value = self.get_control_text('batch_file_var')
+        if value:
+            return value
+        if hasattr(self, 'batch_file_entry'):
+            try:
+                return self.batch_file_entry.get().strip()
+            except Exception:
+                return ''
+        return ''
+
+    def get_bulk_urls(self):
+        urls = []
+        for row in getattr(self, 'bulk_rows', []):
+            var = row.get('var') if isinstance(row, dict) else None
+            if var is None:
+                continue
+            try:
+                value = var.get().strip()
+            except Exception:
+                value = ''
+            if value:
+                urls.append(value)
+        return urls
+
+    def dedupe_preserve_order(self, values):
+        seen = set()
+        result = []
+        for value in values:
+            value = (value or '').strip()
+            if value and value not in seen:
+                seen.add(value)
+                result.append(value)
+        return result
+
+    def read_batch_file_urls(self, file_path):
+        with open(file_path, encoding='utf-8') as f:
+            return [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+
+    def create_temp_batch_file(self, urls):
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tf:
+            tf.write('\n'.join(urls))
+            tf.write('\n')
+            temp_path = tf.name
+        if not hasattr(self, '_temp_batch_files'):
+            self._temp_batch_files = []
+            atexit.register(self._cleanup_temp_files)
+        self._temp_batch_files.append(temp_path)
+        return temp_path
+
+    def collect_batch_targets(self, batch_file=None, bulk_urls=None):
+        batch_file = self.get_batch_file_value() if batch_file is None else (batch_file or '').strip()
+        bulk_urls = self.get_bulk_urls() if bulk_urls is None else list(bulk_urls)
+        direct_urls = []
+        batch_file_path = ''
+
+        if batch_file:
+            if '\n' in batch_file:
+                direct_urls.extend(line.strip() for line in batch_file.splitlines() if line.strip())
+            elif batch_file.startswith(('http://', 'https://')):
+                direct_urls.append(batch_file)
+            else:
+                batch_file_path = batch_file
+
+        direct_urls.extend(bulk_urls)
+        return batch_file_path, self.dedupe_preserve_order(direct_urls)
+
+    def has_download_target(self):
+        return bool(self.url_entry.get().strip() or self.get_batch_file_value() or self.get_bulk_urls())
+
     def unload_tab(self, frame):
         """Destroy inactive tab contents while preserving their GUI state."""
         # EXEMPTION: Never unload the Playlist or Batch tab because they contain dynamic list data
@@ -563,6 +658,8 @@ class YtDlpGUI:
         for name in attribute_names:
             value = getattr(self, name, None)
             if isinstance(value, (tk.BooleanVar, ttk.Entry, ttk.Combobox, scrolledtext.ScrolledText)):
+                if self._stateful_controls.get(name) is value:
+                    continue
                 self._stateful_controls[name] = value
 
                 # Setup autosave triggers
@@ -1014,13 +1111,16 @@ class YtDlpGUI:
             self._fetch_playlist_title_async(url, title_var)
 
     def _fetch_playlist_title_async(self, url, title_var):
+        cookies_from_browser = self.get_control_text('cookies_from_browser')
+        cookies = self.get_control_text('cookies')
+
         def worker():
             try:
                 cmd = [sys.executable, '-m', 'yt_dlp', '--flat-playlist', '--dump-single-json', url]
-                if hasattr(self, 'cookies_from_browser') and self.cookies_from_browser.get():
-                    cmd.extend(['--cookies-from-browser', self.cookies_from_browser.get()])
-                if hasattr(self, 'cookies') and self.cookies.get():
-                    cmd.extend(['--cookies', self.cookies.get()])
+                if cookies_from_browser:
+                    cmd.extend(['--cookies-from-browser', cookies_from_browser])
+                if cookies:
+                    cmd.extend(['--cookies', cookies])
 
                 result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=15)
                 if result.stdout:
@@ -1045,33 +1145,25 @@ class YtDlpGUI:
 
     def parse_batch(self):
         """Parse all batch inputs and normalize them into the main batch input box."""
-        thread = threading.Thread(target=self._parse_batch_worker, daemon=True)
+        file_path = self.get_batch_file_value()
+        row_urls = self.get_bulk_urls()
+        thread = threading.Thread(target=self._parse_batch_worker, args=(file_path, row_urls), daemon=True)
         thread.start()
 
-    def _parse_batch_worker(self):
+    def _parse_batch_worker(self, file_path, row_urls):
         urls = []
 
-        file_path = ''
-        if hasattr(self, 'batch_file_var'):
-            file_path = self.batch_file_var.get().strip()
         if file_path and os.path.isfile(file_path):
             try:
-                with open(file_path, encoding='utf-8') as f:
-                    urls.extend([line.strip() for line in f if line.strip() and not line.strip().startswith('#')])
+                urls.extend(self.read_batch_file_urls(file_path))
             except Exception as e:
                 self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
+        elif file_path:
+            urls.extend(line.strip() for line in file_path.splitlines() if line.strip())
 
-        for row in getattr(self, 'bulk_rows', []):
-            value = row['var'].get().strip()
-            if value:
-                urls.append(value)
+        urls.extend(row_urls)
 
-        seen = set()
-        normalized = []
-        for url in urls:
-            if url not in seen:
-                seen.add(url)
-                normalized.append(url)
+        normalized = self.dedupe_preserve_order(urls)
 
         if not normalized:
             self.log_message(self.tr('No valid batch URLs found.'))
@@ -1079,8 +1171,8 @@ class YtDlpGUI:
             return
 
         content = '\n'.join(normalized)
-        self.root.after(0, lambda: self.batch_file_entry.delete(0, tk.END))
-        self.root.after(0, lambda: self.batch_file_entry.insert(0, content))
+        self.root.after(0, lambda: self._restore_bulk_rows(normalized))
+        self.root.after(0, lambda: self.batch_file_var.set(''))
         self.log_message(self.translate_concat('Batch parsed: ', f'{len(normalized)}') + self.tr(' URL(s) ready.'))
         self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
 
@@ -1227,7 +1319,7 @@ class YtDlpGUI:
                         variable=self.ignore_errors).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-        self.no_warnings = tk.BooleanVar()
+        self.no_warnings = self.get_or_create_boolvar('no_warnings')
         ttk.Checkbutton(scrollable_frame, text='Ignore warnings (--no-warnings)',
                         variable=self.no_warnings).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
         row += 1
@@ -2197,7 +2289,7 @@ class YtDlpGUI:
                         variable=self.quiet).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
         row += 1
 
-        self.no_warnings = tk.BooleanVar()
+        self.no_warnings = self.get_or_create_boolvar('no_warnings')
         ttk.Checkbutton(scrollable_frame, text='No warnings (--no-warnings)',
                         variable=self.no_warnings).grid(row=row, column=0, sticky=tk.W, pady=2, padx=5)
         row += 1
@@ -2714,6 +2806,11 @@ class YtDlpGUI:
             self.output_dir.insert(0, dirname)
 
     def open_output_folder(self):
+        if not hasattr(self, 'output_dir'):
+            self.ensure_named_tab_built('filesystem')
+        if not hasattr(self, 'output_dir'):
+            messagebox.showwarning(self.tr('Warning'), self.tr('Please set an output directory first'))
+            return
         output_dir = self.output_dir.get().strip()
         if not output_dir:
             messagebox.showwarning(self.tr('Warning'), self.tr('Please set an output directory first'))
@@ -2812,7 +2909,8 @@ class YtDlpGUI:
 
         # URL or batch file
         url = self.url_entry.get().strip()
-        batch_file = self.batch_file_entry.get().strip()
+        batch_file = self.get_batch_file_value()
+        batch_file_path, batch_urls = self.collect_batch_targets(batch_file=batch_file)
 
         # General options
         if self.ignore_errors.get():
@@ -3165,24 +3263,18 @@ class YtDlpGUI:
             args.append('--legacy-server-connect')
 
         # SponsorBlock options
-        if self.sponsorblock_mark.get():
-            args.append('--sponsorblock-mark')
-        if self.sponsorblock_remove.get():
-            args.append('--sponsorblock-remove')
-
-        # Collect categories from checkboxes
         selected_remove_cats = [cat for cat, var in self.sb_remove_vars.items() if var.get()]
-        if selected_remove_cats:
-            args.extend(['--sponsorblock-remove', ','.join(selected_remove_cats)])
-
         selected_mark_cats = [cat for cat, var in self.sb_mark_vars.items() if var.get()]
-        if selected_mark_cats:
-            args.extend(['--sponsorblock-mark', ','.join(selected_mark_cats)])
+        if self.no_sponsorblock.get():
+            args.append('--no-sponsorblock')
+        else:
+            if self.sponsorblock_remove.get() or selected_remove_cats:
+                args.extend(['--sponsorblock-remove', ','.join(selected_remove_cats) if selected_remove_cats else 'default'])
+            if self.sponsorblock_mark.get() or selected_mark_cats:
+                args.extend(['--sponsorblock-mark', ','.join(selected_mark_cats) if selected_mark_cats else 'default'])
 
         if self.sponsorblock_chapter_title.get():
             args.extend(['--sponsorblock-chapter-title', self.sponsorblock_chapter_title.get()])
-        if self.no_sponsorblock.get():
-            args.append('--no-sponsorblock')
         if self.sponsorblock_api.get():
             args.extend(['--sponsorblock-api', self.sponsorblock_api.get()])
 
@@ -3227,28 +3319,37 @@ class YtDlpGUI:
                 # If shlex fails, try splitting by whitespace
                 args.extend(raw_args_text.split())
 
-        # Batch file or URL
-        if batch_file:
-            if batch_file.startswith('http') and '\n' not in batch_file:
-                # Single URL in batch field
-                args.append(batch_file)
-            elif '\n' in batch_file or (not os.path.exists(batch_file) and batch_file.startswith('http')):
-                # Multi-line URLs or non-existent path that looks like URL/list
+        # Batch file, batch pool, or URL. Batch targets intentionally win over
+        # the top URL field so the default/example URL cannot hijack batch runs.
+        if batch_file_path or batch_urls:
+            combined_urls = []
+            if batch_file_path and os.path.isfile(batch_file_path):
                 try:
-                    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as tf:
-                        tf.write(batch_file)
-                        temp_path = tf.name
-                    args.extend(['-a', temp_path])
-                    # Register for cleanup
-                    if not hasattr(self, '_temp_batch_files'):
-                        self._temp_batch_files = []
-                        atexit.register(self._cleanup_temp_files)
-                    self._temp_batch_files.append(temp_path)
+                    combined_urls.extend(self.read_batch_file_urls(batch_file_path))
                 except Exception as e:
-                    self.log_message(self.translate_concat('Error creating temporary batch file: ', str(e)))
-                    args.extend(['-a', batch_file])  # Fallback
-            else:
-                args.extend(['-a', batch_file])
+                    self.log_message(self.translate_concat('Error reading batch file: ', str(e)))
+                    if not batch_urls:
+                        args.extend(['-a', batch_file_path])
+            elif batch_file_path and not batch_urls:
+                args.extend(['-a', batch_file_path])
+
+            combined_urls.extend(batch_urls)
+            combined_urls = self.dedupe_preserve_order(combined_urls)
+
+            if combined_urls:
+                if len(combined_urls) == 1 and not batch_file_path:
+                    args.append(combined_urls[0])
+                else:
+                    try:
+                        args.extend(['-a', self.create_temp_batch_file(combined_urls)])
+                    except Exception as e:
+                        self.log_message(self.translate_concat('Error creating temporary batch file: ', str(e)))
+                        if batch_file_path:
+                            args.extend(['-a', batch_file_path])
+                        elif combined_urls:
+                            args.append(combined_urls[0])
+            elif batch_file_path:
+                args.extend(['-a', batch_file_path])
         elif url:
             args.append(url)
 
@@ -3291,7 +3392,7 @@ class YtDlpGUI:
                 self.log_message(f'[{i + 1}/{total}] ' + self.tr('Download Task: Index ') + f'{idx}')
                 self.root.after(0, lambda: self.status_var.set(f'{self.tr("Downloading")} {i + 1}/{total}'))
 
-                if idx != 'Single':
+                if idx != 'Single' and str(idx).isdigit():
                     def highlight_row(v_idx):
                         if hasattr(self, 'playlist_tree'):
                             for child in self.playlist_tree.get_children():
@@ -3320,17 +3421,20 @@ class YtDlpGUI:
                     popen_kwargs['start_new_session'] = True
                 self.current_process = subprocess.Popen(full_cmd, **popen_kwargs)
                 process = self.current_process
+                task_output_lines = []
 
                 if process.stdout:
                     for line in process.stdout:
                         if line:
-                            self.log_message(self.translate_yt_dlp_line(line.rstrip()))
+                            translated_line = self.translate_yt_dlp_line(line.rstrip())
+                            task_output_lines.append(translated_line)
+                            self.log_message(translated_line)
 
                 process.wait()
 
                 if process.returncode != 0 and process.returncode not in (15, -15):
                     self.log_message(self.translate_concat('Task failed with code ', process.returncode))
-                    if 'n challenge solving failed' in ''.join(self.console.get('1.0', tk.END)):
+                    if 'n challenge solving failed' in '\n'.join(task_output_lines):
                         self.log_message(self.tr('\n[!] Warning: Missing JavaScript runtime environment.'))
                         self.log_message(self.tr("[!] Please run 'brew install node' in the terminal to fix this download error."))
                     # We continue even if one fails
@@ -3457,7 +3561,7 @@ class YtDlpGUI:
             self._restore_download_button()
             return
 
-        if not base_args or (not url and not self.batch_file_entry.get().strip()):
+        if not base_args or not self.has_download_target():
             self.log_message(self.tr('[DEBUG] No URL or args — showing warning'))
             messagebox.showwarning(self.tr('No URL'), self.tr('Please enter a URL or batch file to download.'))
             return
@@ -3547,13 +3651,19 @@ class YtDlpGUI:
 
     def parse_playlist(self):
         url = self.url_entry.get().strip()
-        batch = self.batch_file_entry.get().strip()
+        batch = self.get_batch_file_value()
 
         # If main URL is empty but batch has a URL, use it
         if not url and batch.startswith('http') and '\n' not in batch:
             url = batch
             self.url_entry.delete(0, tk.END)
             self.url_entry.insert(0, url)
+        elif not url:
+            bulk_urls = self.get_bulk_urls()
+            if bulk_urls:
+                url = bulk_urls[0]
+                self.url_entry.delete(0, tk.END)
+                self.url_entry.insert(0, url)
 
         if not url:
             self.download_after_playlist_parse = False
@@ -3564,12 +3674,24 @@ class YtDlpGUI:
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
         self.status_var.set(self.tr('Checking URL...'))
-        thread = threading.Thread(target=self._parse_playlist_only, args=(url,), daemon=True)
-        thread.start()
-
-    def _parse_playlist_only(self, url):
         try:
             self.ensure_all_tabs_built()
+        except Exception as e:
+            self.log_message(self.translate_concat('[DEBUG] Failed to prepare playlist options: ', str(e)))
+        parse_options = {
+            'cookies_from_browser': self.get_control_text('cookies_from_browser'),
+            'cookies': self.get_control_text('cookies'),
+            'user_agent': self.get_control_text('user_agent'),
+            'referer': self.get_control_text('referer'),
+            'add_header': self.get_control_text('add_header'),
+            'extractor_args': self.get_control_text('extractor_args'),
+        }
+        thread = threading.Thread(target=self._parse_playlist_only, args=(url, parse_options), daemon=True)
+        thread.start()
+
+    def _parse_playlist_only(self, url, parse_options=None):
+        parse_options = parse_options or {}
+        try:
             self.log_message(self.tr('Checking if URL is a playlist...'))
             # ADDED --no-cache-dir to ensure we get fresh language-specific metadata
             # ADDED --remote-components for JS challenge solving (deno)
@@ -3591,18 +3713,18 @@ class YtDlpGUI:
             # Keep playlist parsing aligned with the actual download/auth context.
             # Otherwise YouTube may reject the preflight parse while normal downloads
             # would have succeeded with the user's browser session.
-            if self.cookies_from_browser.get():
-                cmd.extend(['--cookies-from-browser', self.cookies_from_browser.get()])
-            if self.cookies.get():
-                cmd.extend(['--cookies', self.cookies.get()])
-            if self.user_agent.get():
-                cmd.extend(['--user-agent', self.user_agent.get()])
-            if self.referer.get():
-                cmd.extend(['--referer', self.referer.get()])
-            if self.add_header.get():
-                cmd.extend(['--add-header', self.add_header.get()])
+            if parse_options.get('cookies_from_browser'):
+                cmd.extend(['--cookies-from-browser', parse_options['cookies_from_browser']])
+            if parse_options.get('cookies'):
+                cmd.extend(['--cookies', parse_options['cookies']])
+            if parse_options.get('user_agent'):
+                cmd.extend(['--user-agent', parse_options['user_agent']])
+            if parse_options.get('referer'):
+                cmd.extend(['--referer', parse_options['referer']])
+            if parse_options.get('add_header'):
+                cmd.extend(['--add-header', parse_options['add_header']])
 
-            user_extractor_args = self.extractor_args.get().strip() if hasattr(self, 'extractor_args') else ''
+            user_extractor_args = parse_options.get('extractor_args', '')
             if user_extractor_args:
                 cmd.extend(['--extractor-args', user_extractor_args])
 
@@ -3659,7 +3781,7 @@ class YtDlpGUI:
         except Exception as e:
             self.log_message(self.translate_concat('Error checking playlist: ', str(e)))
             self.download_after_playlist_parse = False
-        self.status_var.set(self.tr('Ready'))
+        self.root.after(0, lambda: self.status_var.set(self.tr('Ready')))
 
     def _show_playlist_tab(self, temp_title):
         self.log_message(self.tr('Playlist detected. Please select videos to download.'))
@@ -3714,7 +3836,7 @@ class YtDlpGUI:
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
 
-        thread = threading.Thread(target=self.run_ytdlp, args=(['-F', url],), daemon=True)
+        thread = threading.Thread(target=self.run_ytdlp, args=([('Formats', ['-F', url])],), daemon=True)
         thread.start()
 
     def extract_info(self):
@@ -3728,7 +3850,7 @@ class YtDlpGUI:
         self.console.delete('1.0', tk.END)
         self.console.config(state=tk.DISABLED)
 
-        thread = threading.Thread(target=self.run_ytdlp, args=(['--dump-json', url],), daemon=True)
+        thread = threading.Thread(target=self.run_ytdlp, args=([('Info', ['--dump-json', url])],), daemon=True)
         thread.start()
 
     def _start_log_watcher(self):
