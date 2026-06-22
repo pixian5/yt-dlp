@@ -112,7 +112,7 @@ class ConfigMixin:
         self.current_language = language
         gui_state = dict(self.config.get('gui_state', {}))
         for key, value in GUI_DEFAULT_STATE.items():
-            if not gui_state.get(key):
+            if key not in gui_state:
                 gui_state[key] = value
         self._pending_gui_state = gui_state
         if hasattr(self, 'language_var'):

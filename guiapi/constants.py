@@ -24,4 +24,5 @@ GUI_DEFAULT_STATE = {
     'url_entry': 'https://www.youtube.com/watch?v=DtPmasWzmu4&list=PLqyUAJYG3AWzd2mRGVLgCNKXbFcE4mAAk',
     'cookies_from_browser': 'chrome',
     'format': 'bv*[height<=1080]+ba',
+    'playlist_exclude_private_var': True,
 }
