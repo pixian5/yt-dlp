@@ -3757,6 +3757,8 @@ class YtDlpGUI:
                     self.playlist_parsed_url = url
                     self.playlist_parse_is_real_playlist = True
                     self.playlist_entries_data = info['entries']
+                    self.playlist_count = info.get('playlist_count')
+                    self.playlist_requested_entries = info.get('requested_entries')
                     self.current_playlist_metadata_title = info.get('title', 'Playlist')
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
@@ -3772,6 +3774,8 @@ class YtDlpGUI:
                         'ie_key': info.get('extractor_key', 'Youtube'),
                     }
                     self.playlist_entries_data = [video_info]
+                    self.playlist_count = 1
+                    self.playlist_requested_entries = [1]
                     self.current_playlist_metadata_title = info.get('title', 'Single Video')
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
@@ -3794,8 +3798,10 @@ class YtDlpGUI:
             self.playlist_tree.delete(*self.playlist_tree.get_children())
 
             entries = self.playlist_entries_data
+            total_entries = getattr(self, 'playlist_count', None) or len(entries)
+            req_entries = getattr(self, 'playlist_requested_entries', None)
+
             filtered_entries = []
-            total_entries = len(entries)
             for i, entry in enumerate(entries):
                 title = entry.get('title') or entry.get('id') or f'Video {i + 1}'
                 availability = entry.get('availability', '')
@@ -3806,9 +3812,16 @@ class YtDlpGUI:
                 )
                 if is_private and self.playlist_exclude_private_var.get():
                     continue
-                # Calculate absolute reverse index based on original total entries
-                abs_rev_idx = total_entries - (i + 1) + 1
-                filtered_entries.append((abs_rev_idx, i + 1, title))
+                
+                # Get absolute original 1-based index from requested_entries if available
+                if req_entries and i < len(req_entries):
+                    original_idx = req_entries[i]
+                else:
+                    original_idx = i + 1
+
+                # Calculate absolute reverse index based on playlist_count
+                abs_rev_idx = total_entries - original_idx + 1
+                filtered_entries.append((abs_rev_idx, original_idx, title))
 
             if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
                 filtered_entries = list(reversed(filtered_entries))
