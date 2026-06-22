@@ -1034,7 +1034,8 @@ class DownloaderMixin:
                 # Top row is ALWAYS downloaded first.
                 visual_idx = total_visible - j
                 self.vis_to_orig[visual_idx] = original_idx
-                self.playlist_tree.insert('', tk.END, values=('☐', visual_idx, title))
+                status_char = '☐' if getattr(self, '_is_from_bulk_parse', False) else '☑'
+                self.playlist_tree.insert('', tk.END, values=(status_char, visual_idx, title))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')

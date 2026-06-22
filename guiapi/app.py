@@ -1241,6 +1241,7 @@ class YtDlpGUI:
         url = (url or '').strip()
         if not url:
             return
+        self._is_from_bulk_parse_flag = True
         self.url_var.set(url)
         self.parse_playlist()
 
@@ -3755,6 +3756,12 @@ class YtDlpGUI:
         thread.start()
 
     def parse_playlist(self):
+        if not getattr(self, '_is_from_bulk_parse_flag', False):
+            self._is_from_bulk_parse = False
+        else:
+            self._is_from_bulk_parse = True
+            self._is_from_bulk_parse_flag = False
+
         url = self.url_entry.get().strip()
         batch = self.get_batch_file_value()
 
@@ -3987,7 +3994,8 @@ class YtDlpGUI:
             for j, (abs_rev_idx, original_idx, title) in enumerate(filtered_entries):
                 # Keep mapping absolute reverse index to original index
                 self.vis_to_orig[abs_rev_idx] = original_idx
-                self.playlist_tree.insert('', tk.END, values=('☐', abs_rev_idx, title))
+                status_char = '☐' if getattr(self, '_is_from_bulk_parse', False) else '☑'
+                self.playlist_tree.insert('', tk.END, values=(status_char, abs_rev_idx, title))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')
