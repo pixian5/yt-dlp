@@ -3987,7 +3987,7 @@ class YtDlpGUI:
             for j, (abs_rev_idx, original_idx, title) in enumerate(filtered_entries):
                 # Keep mapping absolute reverse index to original index
                 self.vis_to_orig[abs_rev_idx] = original_idx
-                self.playlist_tree.insert('', tk.END, values=('☑', abs_rev_idx, title))
+                self.playlist_tree.insert('', tk.END, values=('☐', abs_rev_idx, title))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')
