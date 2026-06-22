@@ -1103,6 +1103,7 @@ class YtDlpGUI:
             self.bulk_rows[0]['var'].set(urls[0] if urls else '')
             if 'playlist_var' in self.bulk_rows[0]:
                 self.bulk_rows[0]['playlist_var'].set(playlists[0] if playlists else '')
+            self.bulk_rows = self.bulk_rows[:1]
             urls = urls[1:]
             playlists = playlists[1:] if playlists else []
         for i, url in enumerate(urls):
