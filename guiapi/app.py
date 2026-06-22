@@ -3756,9 +3756,64 @@ class YtDlpGUI:
                 if info.get('_type') in ('playlist', 'multi_video') and 'entries' in info:
                     self.playlist_parsed_url = url
                     self.playlist_parse_is_real_playlist = True
-                    self.playlist_entries_data = info['entries']
-                    self.playlist_count = info.get('playlist_count')
-                    self.playlist_requested_entries = info.get('requested_entries')
+                    
+                    entries = info['entries']
+                    playlist_count = info.get('playlist_count')
+                    requested_entries = info.get('requested_entries')
+                    
+                    # If total playlist_count is known and greater than entries collected so far,
+                    # we fetch the remaining pages by chunking index ranges with --playlist-items.
+                    if playlist_count and len(entries) < playlist_count:
+                        self.log_message(self.translate_concat(f'[DEBUG] Pagination detected. Total count: {playlist_count}, currently loaded: ', len(entries)))
+                        if not requested_entries:
+                            requested_entries = list(range(1, len(entries) + 1))
+                        
+                        current_loaded = len(entries)
+                        while current_loaded < playlist_count:
+                            start_idx = current_loaded + 1
+                            end_idx = min(start_idx + 99, playlist_count)
+                            range_str = f"{start_idx}-{end_idx}"
+                            
+                            self.log_message(self.translate_concat(f'[DEBUG] Pagination: Fetching items ', f'{range_str}...'))
+                            
+                            page_cmd = cmd.copy()
+                            page_cmd.extend(['--playlist-items', range_str])
+                            
+                            try:
+                                page_proc = subprocess.Popen(
+                                    page_cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    universal_newlines=True,
+                                    bufsize=1,
+                                    env=env,
+                                )
+                                page_stdout, page_stderr = page_proc.communicate()
+                                if page_proc.returncode == 0:
+                                    page_info = json.loads(page_stdout)
+                                    page_entries = page_info.get('entries') or []
+                                    if not page_entries:
+                                        # If no entries returned, break to avoid infinite loop
+                                        break
+                                    
+                                    entries.extend(page_entries)
+                                    page_req = page_info.get('requested_entries')
+                                    if page_req:
+                                        requested_entries.extend(page_req)
+                                    else:
+                                        requested_entries.extend(list(range(start_idx, start_idx + len(page_entries))))
+                                    
+                                    current_loaded += len(page_entries)
+                                else:
+                                    self.log_message(self.translate_concat(f'[DEBUG] Pagination failed for range {range_str}: ', page_stderr.strip()))
+                                    break
+                            except Exception as pe:
+                                self.log_message(self.translate_concat(f'[DEBUG] Pagination exception for range {range_str}: ', str(pe)))
+                                break
+                    
+                    self.playlist_entries_data = entries
+                    self.playlist_count = playlist_count or len(entries)
+                    self.playlist_requested_entries = requested_entries
                     self.current_playlist_metadata_title = info.get('title', 'Playlist')
                     self.root.after(0, self._show_playlist_tab, self.current_playlist_metadata_title)
                     return
