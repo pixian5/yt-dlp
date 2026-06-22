@@ -3795,6 +3795,7 @@ class YtDlpGUI:
 
             entries = self.playlist_entries_data
             filtered_entries = []
+            total_entries = len(entries)
             for i, entry in enumerate(entries):
                 title = entry.get('title') or entry.get('id') or f'Video {i + 1}'
                 availability = entry.get('availability', '')
@@ -3805,19 +3806,18 @@ class YtDlpGUI:
                 )
                 if is_private and self.playlist_exclude_private_var.get():
                     continue
-                filtered_entries.append((i + 1, title))
+                # Calculate absolute reverse index based on original total entries
+                abs_rev_idx = total_entries - (i + 1) + 1
+                filtered_entries.append((abs_rev_idx, i + 1, title))
 
             if getattr(self, 'playlist_reverse_var', None) and self.playlist_reverse_var.get():
                 filtered_entries = list(reversed(filtered_entries))
 
-            total_visible = len(filtered_entries)
             self.vis_to_orig = {}
-            for j, (original_idx, title) in enumerate(filtered_entries):
-                # FIXED LOGIC: Top row gets the max number, Bottom row gets 1.
-                # Top row is ALWAYS downloaded first.
-                visual_idx = total_visible - j
-                self.vis_to_orig[visual_idx] = original_idx
-                self.playlist_tree.insert('', tk.END, values=('☑', visual_idx, title))
+            for j, (abs_rev_idx, original_idx, title) in enumerate(filtered_entries):
+                # Keep mapping absolute reverse index to original index
+                self.vis_to_orig[abs_rev_idx] = original_idx
+                self.playlist_tree.insert('', tk.END, values=('☑', abs_rev_idx, title))
 
             # Reset headers
             self.playlist_tree.heading('status', text=' ')
