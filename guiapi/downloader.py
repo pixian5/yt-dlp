@@ -892,7 +892,7 @@ class DownloaderMixin:
 
                     # Always use the specific playlist URL for individual tasks
                     task_args.append(url)
-                    filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
+                    filename_tpl = f'{visual_idx:03d}-{gui_title}.%(ext)s'
                     # Remove unsafe characters
                     filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
 

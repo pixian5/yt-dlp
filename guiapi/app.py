@@ -3722,7 +3722,7 @@ class YtDlpGUI:
                         task_args.append(entry_download_url)
                     else:
                         task_args.append(url)
-                    filename_tpl = f'{visual_idx:03d} - {gui_title}.%(ext)s'
+                    filename_tpl = f'{visual_idx:03d}-{gui_title}.%(ext)s'
                     # Remove unsafe characters
                     filename_tpl = ''.join([c for c in filename_tpl if c not in '<>:"/\\|?*']).strip()
 
