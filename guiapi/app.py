@@ -953,6 +953,9 @@ class YtDlpGUI:
         self.bulk_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Bind mousewheel events for smooth scrolling on this canvas
+        self._bind_batch_mousewheel()
+
         # Controls row removed: Bulk Paste and Parse Batch buttons were intentionally deleted
         # per user request. Keep dynamic rows and clear button intact.
         self.bulk_rows = []
@@ -960,9 +963,80 @@ class YtDlpGUI:
 
         return frame
 
+    def _bind_batch_mousewheel(self):
+        self.bulk_canvas.bind('<Enter>', lambda e: self.bulk_canvas.bind_all('<MouseWheel>', self._on_batch_mousewheel))
+        self.bulk_canvas.bind('<Leave>', lambda e: self.bulk_canvas.unbind_all('<MouseWheel>'))
+        self.bulk_canvas.bind('<Enter>', lambda e: [
+            self.bulk_canvas.bind_all('<Button-4>', self._on_batch_mousewheel),
+            self.bulk_canvas.bind_all('<Button-5>', self._on_batch_mousewheel)
+        ], add='+')
+        self.bulk_canvas.bind('<Leave>', lambda e: [
+            self.bulk_canvas.unbind_all('<Button-4>'),
+            self.bulk_canvas.unbind_all('<Button-5>')
+        ], add='+')
+
+    def _on_batch_mousewheel(self, event):
+        if event.num == 4:
+            self.bulk_canvas.yview_scroll(-2, 'units')
+        elif event.num == 5:
+            self.bulk_canvas.yview_scroll(2, 'units')
+        else:
+            if abs(event.delta) >= 120:
+                scroll_units = -2 * int(event.delta / 120)
+            else:
+                scroll_units = -2 * event.delta
+            self.bulk_canvas.yview_scroll(scroll_units, 'units')
+
+    def _on_drag_start(self, event, row_frame):
+        self._drag_data = {
+            'row': row_frame,
+            'y': event.y_root,
+        }
+
+    def _on_drag_motion(self, event, row_frame):
+        if not hasattr(self, '_drag_data') or not self._drag_data:
+            return
+        delta_y = event.y_root - self._drag_data['y']
+        if abs(delta_y) < 10:
+            return
+        children = self.bulk_scroll_frame.winfo_children()
+        try:
+            idx = children.index(row_frame)
+        except ValueError:
+            return
+        if delta_y > 0 and idx < len(children) - 1:
+            next_row = children[idx + 1]
+            if event.y_root > next_row.winfo_rooty() + (next_row.winfo_height() / 2):
+                self._swap_rows(idx, idx + 1)
+                self._drag_data['y'] = event.y_root
+        elif delta_y < 0 and idx > 0:
+            prev_row = children[idx - 1]
+            if event.y_root < prev_row.winfo_rooty() + (prev_row.winfo_height() / 2):
+                self._swap_rows(idx - 1, idx)
+                self._drag_data['y'] = event.y_root
+
+    def _on_drag_stop(self, event, row_frame):
+        self._drag_data = None
+        self.trigger_autosave()
+
+    def _swap_rows(self, idx1, idx2):
+        self.bulk_rows[idx1], self.bulk_rows[idx2] = self.bulk_rows[idx2], self.bulk_rows[idx1]
+        for r in self.bulk_rows:
+            r['frame'].pack_forget()
+        for r in self.bulk_rows:
+            r['frame'].pack(fill=tk.X, pady=2)
+
     def add_bulk_row(self, initial_text='', initial_playlist='', auto_parse_playlist=False):
         row = ttk.Frame(self.bulk_scroll_frame)
         row.pack(fill=tk.X, pady=2)
+        
+        # Add drag handle
+        lbl_drag = ttk.Label(row, text=' ☰ ', cursor='fleur')
+        lbl_drag.pack(side=tk.LEFT, padx=(5, 2))
+        lbl_drag.bind('<Button-1>', lambda e, r=row: self._on_drag_start(e, r))
+        lbl_drag.bind('<B1-Motion>', lambda e, r=row: self._on_drag_motion(e, r))
+        lbl_drag.bind('<ButtonRelease-1>', lambda e, r=row: self._on_drag_stop(e, r))
+        
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
@@ -1048,6 +1122,14 @@ class YtDlpGUI:
     def add_bulk_row_at_index(self, index, initial_text='', initial_playlist='', auto_parse_playlist=False):
         """Add a bulk row at specific index position."""
         row = ttk.Frame(self.bulk_scroll_frame)
+        
+        # Add drag handle
+        lbl_drag = ttk.Label(row, text=' ☰ ', cursor='fleur')
+        lbl_drag.pack(side=tk.LEFT, padx=(5, 2))
+        lbl_drag.bind('<Button-1>', lambda e, r=row: self._on_drag_start(e, r))
+        lbl_drag.bind('<B1-Motion>', lambda e, r=row: self._on_drag_motion(e, r))
+        lbl_drag.bind('<ButtonRelease-1>', lambda e, r=row: self._on_drag_stop(e, r))
+        
         var = tk.StringVar(value=initial_text)
         var.trace_add('write', self.trigger_autosave)
         entry = ttk.Entry(row, textvariable=var)
@@ -1096,6 +1178,25 @@ class YtDlpGUI:
             return
         if playlists is None:
             playlists = []
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_urls = []
+        unique_playlists = []
+        for i, url in enumerate(urls):
+            norm_url = url.strip()
+            if not norm_url:
+                continue
+            if norm_url in seen:
+                continue
+            seen.add(norm_url)
+            unique_urls.append(url)
+            pl = playlists[i] if i < len(playlists) else ''
+            unique_playlists.append(pl)
+
+        urls = unique_urls
+        playlists = unique_playlists
+
         # Clear existing rows first
         for row in self.bulk_rows[1:]:
             row['frame'].destroy()
